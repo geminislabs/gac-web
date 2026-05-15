@@ -1,10 +1,35 @@
 <!doctype html>
-<html lang="en">
+<html lang="es" data-theme="default" class="dark">
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" href="/images/logo.png" />
-		<title>Geminislabs Admin Console</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="color-scheme" content="dark light" />
+		<title>Geminislabs Admin Console</title>
+		<!--
+		   Aplica el tema persistido antes del primer paint para evitar
+		   "Flash of Unstyled Theme" (FOUT). Se ejecuta de forma segura
+		   incluso si localStorage no está disponible.
+		-->
+		<script>
+			(function () {
+				try {
+					var STORAGE_KEY = 'gac:theme';
+					var allowed = ['default', 'matrix', 'dgray', 'classic'];
+					var stored = localStorage.getItem(STORAGE_KEY);
+					var theme = allowed.indexOf(stored) >= 0 ? stored : 'default';
+					var root = document.documentElement;
+					root.setAttribute('data-theme', theme);
+					if (theme === 'classic') {
+						root.classList.remove('dark');
+					} else {
+						root.classList.add('dark');
+					}
+				} catch (e) {
+					/* noop */
+				}
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

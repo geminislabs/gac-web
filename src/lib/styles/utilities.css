@@ -1,0 +1,142 @@
+/* ===================================================================
+   UTILITIES — Utilidades atómicas vinculadas a las variables del tema.
+   Usar estas clases en lugar de tonos crudos de Tailwind cuando se
+   necesite respetar el tema activo.
+   ================================================================== */
+
+@layer utilities {
+	/* === FONDOS === */
+	.bg-app {
+		background-color: var(--color-bg-primary);
+	}
+
+	.bg-app-deep {
+		background-color: var(--color-bg-secondary);
+	}
+
+	.bg-app-elevated {
+		background-color: var(--color-bg-elevated);
+	}
+
+	.bg-app-tertiary {
+		background-color: var(--color-bg-tertiary);
+	}
+
+	.bg-glass {
+		background-color: var(--color-glass-bg);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+	}
+
+	.bg-gradient-brand {
+		background: var(--gradient-brand);
+	}
+
+	.bg-gradient-primary {
+		background: var(--gradient-primary);
+	}
+
+	.bg-gradient-hero {
+		background: var(--gradient-hero);
+	}
+
+	/* === TEXTO === */
+	.text-app {
+		color: var(--color-text-primary);
+	}
+
+	.text-app-secondary {
+		color: var(--color-text-secondary);
+	}
+
+	.text-app-muted {
+		color: var(--color-text-muted);
+	}
+
+	.text-accent {
+		color: var(--color-accent-primary);
+	}
+
+	.text-accent-2 {
+		color: var(--color-accent-secondary);
+	}
+
+	.text-success {
+		color: var(--color-success);
+	}
+
+	.text-warning {
+		color: var(--color-warning);
+	}
+
+	.text-danger {
+		color: var(--color-danger);
+	}
+
+	/* === BORDES === */
+	.border-app {
+		border-color: var(--color-border);
+	}
+
+	.border-app-strong {
+		border-color: var(--color-border-strong);
+	}
+
+	.border-accent {
+		border-color: var(--color-accent-primary);
+	}
+
+	.border-glass {
+		border-color: var(--color-glass-border);
+	}
+
+	/* === Z-INDEX SEMÁNTICOS === */
+	.z-content {
+		z-index: var(--z-content);
+	}
+	.z-sticky {
+		z-index: var(--z-sticky);
+	}
+	.z-dropdown {
+		z-index: var(--z-dropdown);
+	}
+	.z-overlay {
+		z-index: var(--z-overlay);
+	}
+	.z-sidebar {
+		z-index: var(--z-sidebar);
+	}
+	.z-header {
+		z-index: var(--z-header);
+	}
+	.z-modal-backdrop {
+		z-index: var(--z-modal-backdrop);
+	}
+	.z-modal {
+		z-index: var(--z-modal);
+	}
+	.z-toast {
+		z-index: var(--z-toast);
+	}
+	.z-tooltip {
+		z-index: var(--z-tooltip);
+	}
+
+	/* === TRANSICIONES === */
+	.theme-transition {
+		transition:
+			background-color var(--transition-base),
+			border-color var(--transition-base),
+			color var(--transition-base),
+			box-shadow var(--transition-base);
+	}
+
+	/* === EFECTOS DECORATIVOS === */
+	.glow-accent {
+		box-shadow: 0 0 24px var(--color-shadow-primary);
+	}
+
+	.glow-accent-strong {
+		box-shadow: 0 0 36px var(--color-shadow-primary);
+	}
+}

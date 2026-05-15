@@ -10,7 +10,7 @@
 	let plans = $state([]);
 	let isLoading = $state(true);
 	let searchTerm = $state('');
-	let productFilter = $state(''); // Filter by product code
+	let productFilter = $state('');
 	/** @type {string | null} */
 	let selectedPlanId = $state(null);
 
@@ -19,9 +19,7 @@
 			const term = searchTerm.toLowerCase();
 			const matchesSearch =
 				p.name.toLowerCase().includes(term) || p.code.toLowerCase().includes(term);
-
 			if (!productFilter) return matchesSearch;
-
 			const hasProduct = (p.products || []).some((prod) => prod.code === productFilter);
 			return matchesSearch && hasProduct;
 		})
@@ -29,17 +27,23 @@
 
 	let selectedPlan = $derived(plans.find((p) => p.id === selectedPlanId));
 
-	onMount(async () => {
-		await loadPlans();
+	let productOptions = $derived(() => {
+		const map = new Map();
+		for (const p of plans) {
+			for (const prod of p.products || []) {
+				if (!map.has(prod.code)) map.set(prod.code, prod);
+			}
+		}
+		return Array.from(map.values());
 	});
+
+	onMount(loadPlans);
 
 	async function loadPlans() {
 		isLoading = true;
 		try {
 			const response = await PlansService.getAll();
-			/** @type {any} */
-			const data = response;
-			plans = Array.isArray(data) ? data : data.plans || [];
+			plans = Array.isArray(response) ? response : response?.plans || response?.data || [];
 		} catch (error) {
 			console.error('Error loading plans:', error);
 		} finally {
@@ -53,8 +57,8 @@
 	}
 </script>
 
-<div class="flex flex-col h-screen overflow-hidden bg-slate-50">
-	<Topbar title="Planes" backUrl="/">
+<div class="flex h-screen flex-col overflow-hidden bg-app">
+	<Topbar title="Planes" subtitle="Configuración de planes y capacidades" backUrl="/">
 		<a href="/products/plans/new">
 			<Button variant="primary" size="sm">
 				<svg
@@ -67,34 +71,35 @@
 					stroke-width="2"
 					stroke-linecap="round"
 					stroke-linejoin="round"
-					class="mr-2"><path d="M5 12h14" /><path d="M12 5v14" /></svg
+					class="mr-1.5"
+					aria-hidden="true"
 				>
-				Nuevo Plan
+					<path d="M5 12h14" />
+					<path d="M12 5v14" />
+				</svg>
+				Nuevo plan
 			</Button>
 		</a>
 	</Topbar>
 
-	<div class="flex flex-col flex-1 overflow-hidden">
-		<!-- Top Panel: Plans Table (40%) -->
-		<div class="h-[40%] flex flex-col border-b border-slate-200 bg-white">
+	<div class="flex flex-1 flex-col overflow-hidden">
+		<!-- TOP: tabla -->
+		<div
+			class="flex h-[42%] flex-col border-b"
+			style="border-color: var(--color-border); background-color: var(--color-bg-secondary)"
+		>
 			<div
-				class="p-4 border-b border-slate-100 flex justify-between items-center bg-white z-10 gap-4"
+				class="z-sticky flex items-center justify-between gap-4 border-b p-4"
+				style="border-color: var(--color-border)"
 			>
-				<div class="flex gap-3 flex-1">
+				<div class="flex flex-1 gap-3">
 					<div class="flex-1">
-						<Input
-							placeholder="Filtrar por nombre o código..."
-							bind:value={searchTerm}
-							class="w-full"
-						/>
+						<Input placeholder="Filtrar por nombre o código…" bind:value={searchTerm} />
 					</div>
 					<div class="w-64">
-						<select
-							bind:value={productFilter}
-							class="w-full h-9 px-3 py-1 text-sm border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-						>
+						<select bind:value={productFilter} class="gac-input">
 							<option value="">Todos los productos</option>
-							{#each [...new Set(plans.flatMap( (p) => (p.products || []).map( (prod) => ({ code: prod.code, name: prod.name }) ) ))] as product (product.code)}
+							{#each productOptions() as product (product.code)}
 								<option value={product.code}>{product.name}</option>
 							{/each}
 						</select>
@@ -106,67 +111,54 @@
 			</div>
 
 			<div class="flex-1 overflow-y-auto">
-				<table class="w-full text-sm text-left">
-					<thead
-						class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 sticky top-0"
-					>
+				<table class="gac-table">
+					<thead class="sticky top-0">
 						<tr>
-							<th class="px-6 py-3">Nombre</th>
-							<th class="px-6 py-3">Código</th>
-							<th class="px-6 py-3">Producto</th>
-							<th class="px-6 py-3">Precio Mensual</th>
-							<th class="px-6 py-3">Precio Anual</th>
-							<th class="px-6 py-3">Estado</th>
+							<th>Nombre</th>
+							<th>Código</th>
+							<th>Producto</th>
+							<th>Precio mensual</th>
+							<th>Precio anual</th>
+							<th>Estado</th>
 						</tr>
 					</thead>
-					<tbody class="divide-y divide-slate-100">
+					<tbody>
 						{#if isLoading}
 							<tr>
-								<td colspan="7" class="px-6 py-8 text-center text-slate-500">
-									Cargando planes...
-								</td>
+								<td colspan="6" class="py-8 text-center text-app-muted">Cargando planes…</td>
 							</tr>
 						{:else if filteredPlans.length === 0}
 							<tr>
-								<td colspan="7" class="px-6 py-8 text-center text-slate-500">
+								<td colspan="6" class="py-8 text-center text-app-muted">
 									No se encontraron planes.
 								</td>
 							</tr>
 						{:else}
 							{#each filteredPlans as plan (plan.id)}
 								<tr
-									class="transition-colors cursor-pointer {selectedPlanId === plan.id
-										? 'bg-blue-50/50'
-										: 'hover:bg-slate-50'}"
-									onclick={() => handleRowClick(plan.id)}
+									class="cursor-pointer"
+									style={selectedPlanId === plan.id
+										? 'background-color: var(--color-accent-soft)'
+										: ''}
+									onclick={() => plan.id && handleRowClick(plan.id)}
 								>
-									<td class="px-6 py-3 font-medium text-slate-900">
-										{plan.name}
-									</td>
-									<td class="px-6 py-3 text-slate-600 font-mono text-xs uppercase">
-										{plan.code}
-									</td>
-									<td class="px-6 py-3 text-slate-600">
+									<td class="font-medium text-app">{plan.name}</td>
+									<td class="font-mono text-xs uppercase text-accent">{plan.code}</td>
+									<td>
 										{#if plan.products && plan.products.length > 0}
-											<span class="text-sm">{plan.products[0].name}</span>
+											<span class="text-sm text-app-secondary">{plan.products[0].name}</span>
 										{:else}
-											<span class="text-xs text-slate-400">Sin producto</span>
+											<span class="text-xs italic text-app-muted">Sin producto</span>
 										{/if}
 									</td>
-									<td class="px-6 py-3 text-slate-600">
-										${plan.price_monthly}
-									</td>
-									<td class="px-6 py-3 text-slate-600">
-										${plan.price_yearly}
-									</td>
-									<td class="px-6 py-3">
-										<span
-											class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {plan.is_active
-												? 'bg-green-100 text-green-800'
-												: 'bg-slate-100 text-slate-800'}"
-										>
-											{plan.is_active ? 'Activo' : 'Inactivo'}
-										</span>
+									<td class="text-app-secondary">${plan.price_monthly}</td>
+									<td class="text-app-secondary">${plan.price_yearly}</td>
+									<td>
+										{#if plan.is_active}
+											<span class="gac-badge gac-badge-success">Activo</span>
+										{:else}
+											<span class="gac-badge gac-badge-neutral">Inactivo</span>
+										{/if}
 									</td>
 								</tr>
 							{/each}
@@ -176,12 +168,12 @@
 			</div>
 		</div>
 
-		<!-- Bottom Panel: Plan Detail (60%) -->
-		<div class="h-[60%] bg-slate-50 overflow-hidden">
+		<!-- BOTTOM: detalle del plan -->
+		<div class="h-[58%] overflow-hidden bg-app">
 			{#if selectedPlan}
 				<PlanDetail plan={selectedPlan} onSave={loadPlans} />
 			{:else}
-				<div class="flex flex-col items-center justify-center h-full text-slate-400">
+				<div class="flex h-full flex-col items-center justify-center text-app-muted">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						width="48"
@@ -192,16 +184,15 @@
 						stroke-width="1"
 						stroke-linecap="round"
 						stroke-linejoin="round"
-						class="mb-4 text-slate-300"
+						class="mb-4 opacity-60"
+						aria-hidden="true"
 					>
 						<rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
 						<line x1="3" y1="10" x2="21" y2="10" />
 						<line x1="9" y1="22" x2="9" y2="10" />
 					</svg>
-					<p class="text-lg font-medium">Seleccione un plan</p>
-					<p class="text-sm">
-						Seleccione un plan de la tabla superior para ver y editar sus detalles.
-					</p>
+					<p class="text-lg font-medium text-app">Selecciona un plan</p>
+					<p class="text-sm">Elige un plan de la tabla superior para ver y editar sus detalles.</p>
 				</div>
 			{/if}
 		</div>

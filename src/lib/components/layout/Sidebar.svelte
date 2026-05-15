@@ -2,49 +2,80 @@
 	import { page } from '$app/stores';
 	import { auth, logout } from '$lib/stores/auth';
 
+	/** @type {{ isCollapsed?: boolean }} */
 	let { isCollapsed = $bindable(false) } = $props();
 
+	/**
+	 * @typedef {{ href: string, label: string, icon: string, section?: 'main' | 'commerce' | 'admin' }} MenuItem
+	 */
+
+	/** @type {MenuItem[]} */
 	const menuItems = [
-		{ href: '/', label: 'Dashboard', icon: 'LayoutDashboard' },
-		{ href: '/products/catalog', label: 'Productos', icon: 'Package' },
-		{ href: '/products/nexus', label: 'Nexus', icon: 'Smartphone' },
-		{ href: '/products/plans', label: 'Planes', icon: 'Tag' },
-		{
-			href: '/admin/internal-users',
-			label: 'Usuarios Internos',
-			icon: 'Users'
-		}
+		{ href: '/', label: 'Dashboard', icon: 'LayoutDashboard', section: 'main' },
+		{ href: '/products/catalog', label: 'Productos', icon: 'Package', section: 'main' },
+		{ href: '/products/nexus', label: 'Nexus', icon: 'Smartphone', section: 'main' },
+		{ href: '/products/plans', label: 'Planes', icon: 'Tag', section: 'main' },
+		{ href: '/admin/orders', label: 'Órdenes', icon: 'ShoppingCart', section: 'commerce' },
+		{ href: '/admin/payments', label: 'Pagos', icon: 'CreditCard', section: 'commerce' },
+		{ href: '/admin/shipments', label: 'Envíos', icon: 'Truck', section: 'commerce' },
+		{ href: '/admin/internal-users', label: 'Usuarios Internos', icon: 'Users', section: 'admin' }
 	];
+
+	let userInitial = $derived(
+		(
+			$auth.user?.full_name ||
+			$auth.user?.name ||
+			$auth.user?.email ||
+			'U'
+		)
+			.charAt(0)
+			.toUpperCase()
+	);
+
+	let userName = $derived(
+		$auth.user?.full_name || $auth.user?.name || $auth.user?.email || 'Usuario'
+	);
+
+	let userEmail = $derived($auth.user?.email || 'sin-email@local');
 
 	/** @param {string} href */
 	function isActive(href) {
-		// Exact match for root path, startsWith for others
-		if (href === '/') {
-			return $page.url.pathname === '/';
-		}
+		if (href === '/') return $page.url.pathname === '/';
 		return $page.url.pathname.startsWith(href);
 	}
 </script>
 
 <aside
-	class="bg-slate-900 flex flex-col h-screen fixed left-0 top-0 z-50 transition-all duration-300 border-r border-slate-800 shadow-xl
-	{isCollapsed ? 'w-20' : 'w-64'}"
-	style="background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);"
+	class="z-sidebar fixed left-0 top-0 flex h-screen flex-col border-r theme-transition"
+	style="
+		width: {isCollapsed ? 'var(--sidebar-width-collapsed)' : 'var(--sidebar-width)'};
+		background: var(--gradient-surface);
+		border-color: var(--color-border);
+		transition:
+			width var(--transition-base),
+			background-color var(--transition-base),
+			border-color var(--transition-base);
+	"
 >
-	<div class="h-16 flex items-center justify-center border-b border-slate-800/50 shrink-0 relative">
-		<img src="/images/logo.png" alt="Logo" class="w-8 h-8 object-contain" />
+	<!-- LOGO -->
+	<div
+		class="relative flex h-16 shrink-0 items-center justify-center border-b"
+		style="border-color: var(--color-border)"
+	>
+		<img src="/images/logo.png" alt="Geminislabs" class="h-9 w-9 object-contain" />
 		{#if !isCollapsed}
-			<h1 class="ml-3 text-lg font-bold tracking-tight text-white leading-tight truncate">
-				Geminislab
-			</h1>
+			<h1 class="ml-3 truncate text-lg font-bold tracking-tight text-app">Geminislab</h1>
 		{/if}
 	</div>
 
-	<!-- Toggle Button (Absolute on border) -->
+	<!-- COLLAPSE TOGGLE -->
 	<button
-		class="absolute -right-3 top-20 bg-slate-800 text-slate-400 hover:text-white border border-slate-700 rounded-full p-1 shadow-md z-50 transition-colors"
+		type="button"
+		class="absolute -right-3 top-20 z-sidebar flex h-6 w-6 items-center justify-center rounded-full border bg-app-deep text-app-secondary shadow-md transition-colors hover:text-accent"
+		style="border-color: var(--color-border)"
 		onclick={() => (isCollapsed = !isCollapsed)}
 		title={isCollapsed ? 'Expandir menú' : 'Contraer menú'}
+		aria-label={isCollapsed ? 'Expandir menú lateral' : 'Contraer menú lateral'}
 	>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
@@ -53,31 +84,45 @@
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="currentColor"
-			stroke-width="2"
+			stroke-width="2.25"
 			stroke-linecap="round"
 			stroke-linejoin="round"
-			class="transition-transform duration-300 {isCollapsed ? 'rotate-180' : ''}"
-			><polyline points="15 18 9 12 15 6"></polyline></svg
+			class="transition-transform duration-200 {isCollapsed ? 'rotate-180' : ''}"
+			aria-hidden="true"
 		>
+			<polyline points="15 18 9 12 15 6" />
+		</svg>
 	</button>
 
-	<nav class="flex-1 p-3 space-y-2 overflow-y-auto mt-2">
-		{#each menuItems as item, index (item.label)}
+	<!-- NAV -->
+	<nav class="mt-2 flex-1 space-y-1 overflow-y-auto p-3" aria-label="Navegación principal">
+		{#each menuItems as item, index (item.href)}
 			<a
 				href={item.href}
-				title={isCollapsed ? item.label : ''}
-				class="flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200 group
-				{isActive(item.href)
-					? 'bg-blue-600 text-white shadow-md border border-blue-500'
-					: 'text-slate-300 hover:bg-slate-800 hover:text-white hover:border-slate-700 border border-transparent'}
-				{isCollapsed ? 'justify-center' : ''}"
+				title={isCollapsed ? item.label : undefined}
+				aria-current={isActive(item.href) ? 'page' : undefined}
+				class="group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium theme-transition
+					{isActive(item.href)
+					? 'text-app shadow-sm'
+					: 'text-app-secondary hover:text-app'}
+					{isCollapsed ? 'justify-center' : ''}"
+				style="
+					background: {isActive(item.href) ? 'var(--gradient-primary)' : 'transparent'};
+					box-shadow: {isActive(item.href) ? '0 4px 16px var(--color-shadow-primary)' : 'none'};
+				"
+				onmouseenter={(e) => {
+					if (!isActive(item.href)) {
+						(/** @type {HTMLElement} */ (e.currentTarget)).style.backgroundColor =
+							'var(--color-bg-elevated)';
+					}
+				}}
+				onmouseleave={(e) => {
+					if (!isActive(item.href)) {
+						(/** @type {HTMLElement} */ (e.currentTarget)).style.backgroundColor = 'transparent';
+					}
+				}}
 			>
-				<span
-					class="transition-colors {isActive(item.href)
-						? 'text-white'
-						: 'text-slate-300 group-hover:text-white'}
-					{isCollapsed ? '' : 'mr-3'}"
-				>
+				<span class="flex h-5 w-5 shrink-0 items-center justify-center {isCollapsed ? '' : 'mr-3'}">
 					{#if item.icon === 'Package'}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -89,10 +134,15 @@
 							stroke-width="2"
 							stroke-linecap="round"
 							stroke-linejoin="round"
-							><path d="m7.5 4.27 9 5.15" /><path
-								d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
-							/><path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22V12" /></svg
+							aria-hidden="true"
 						>
+							<path d="m7.5 4.27 9 5.15" />
+							<path
+								d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
+							/>
+							<path d="m3.3 7 8.7 5 8.7-5" />
+							<path d="M12 22V12" />
+						</svg>
 					{:else if item.icon === 'LayoutDashboard'}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -104,20 +154,13 @@
 							stroke-width="2"
 							stroke-linecap="round"
 							stroke-linejoin="round"
-							><rect width="7" height="9" x="3" y="3" rx="1" /><rect
-								width="7"
-								height="5"
-								x="14"
-								y="3"
-								rx="1"
-							/><rect width="7" height="9" x="14" y="12" rx="1" /><rect
-								width="7"
-								height="5"
-								x="3"
-								y="16"
-								rx="1"
-							/></svg
+							aria-hidden="true"
 						>
+							<rect width="7" height="9" x="3" y="3" rx="1" />
+							<rect width="7" height="5" x="14" y="3" rx="1" />
+							<rect width="7" height="9" x="14" y="12" rx="1" />
+							<rect width="7" height="5" x="3" y="16" rx="1" />
+						</svg>
 					{:else if item.icon === 'Smartphone'}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -129,8 +172,11 @@
 							stroke-width="2"
 							stroke-linecap="round"
 							stroke-linejoin="round"
-							><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg
+							aria-hidden="true"
 						>
+							<rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
+							<path d="M12 18h.01" />
+						</svg>
 					{:else if item.icon === 'Tag'}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -142,81 +188,141 @@
 							stroke-width="2"
 							stroke-linecap="round"
 							stroke-linejoin="round"
-							><path
+							aria-hidden="true"
+						>
+							<path
 								d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"
-							/><path d="M7 7h.01" /></svg
-						>
-					{:else if item.icon === 'Users'}
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="20"
-							height="20"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle
-								cx="9"
-								cy="7"
-								r="4"
-							/><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg
-						>
-					{/if}
+							/>
+							<path d="M7 7h.01" />
+						</svg>
+				{:else if item.icon === 'Users'}
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="20"
+						height="20"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+						<circle cx="9" cy="7" r="4" />
+						<path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+						<path d="M16 3.13a4 4 0 0 1 0 7.75" />
+					</svg>
+				{:else if item.icon === 'ShoppingCart'}
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="20"
+						height="20"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<circle cx="9" cy="21" r="1" />
+						<circle cx="20" cy="21" r="1" />
+						<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+					</svg>
+				{:else if item.icon === 'CreditCard'}
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="20"
+						height="20"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<rect x="2" y="5" width="20" height="14" rx="2" />
+						<line x1="2" y1="10" x2="22" y2="10" />
+					</svg>
+				{:else if item.icon === 'Truck'}
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="20"
+						height="20"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M5 18H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3h3l4 5v5h-2" />
+						<circle cx="7.5" cy="18.5" r="2.5" />
+						<circle cx="17.5" cy="18.5" r="2.5" />
+					</svg>
+				{/if}
 				</span>
+
 				{#if !isCollapsed}
 					<span class="truncate">{item.label}</span>
 				{/if}
 			</a>
 
-			<!-- Divider after Dashboard -->
-			{#if index === 0}
-				<div class="my-3 border-t border-slate-700/30"></div>
+			{#if index < menuItems.length - 1 && menuItems[index + 1].section !== item.section}
+				<hr class="gac-divider my-3" />
 			{/if}
 		{/each}
 	</nav>
 
-	<div class="p-4 border-t border-slate-800/50 bg-slate-900/50">
-		<div class="flex items-center mb-4 {isCollapsed ? 'justify-center' : 'px-2'}">
+	<!-- FOOTER (USUARIO + LOGOUT) -->
+	<div
+		class="border-t p-4"
+		style="border-color: var(--color-border); background: var(--color-bg-elevated)"
+	>
+		<div class="mb-3 flex items-center {isCollapsed ? 'justify-center' : ''}">
 			<div
-				class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-lg shrink-0"
+				class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+				style="background: var(--gradient-brand); box-shadow: 0 0 0 1px var(--color-border-strong)"
+				aria-hidden="true"
 			>
-				{($auth.user?.name || $auth.user?.data?.name || 'U').charAt(0).toUpperCase()}
+				{userInitial}
 			</div>
 			{#if !isCollapsed}
 				<div class="ml-3 overflow-hidden">
-					<p class="text-xs font-medium text-white truncate">
-						{$auth.user?.name || $auth.user?.data?.name || 'User'}
-					</p>
-					<p class="text-[10px] text-slate-400 truncate">
-						{$auth.user?.email || $auth.user?.data?.email || 'email@example.com'}
-					</p>
+					<p class="truncate text-xs font-medium text-app">{userName}</p>
+					<p class="truncate text-[10px] text-app-muted">{userEmail}</p>
 				</div>
 			{/if}
 		</div>
 		<button
+			type="button"
 			onclick={logout}
-			title={isCollapsed ? 'Cerrar Sesión' : ''}
-			class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-red-900/20 hover:text-red-400 hover:border-red-900/30 border border-transparent rounded-md transition-all duration-200"
+			title={isCollapsed ? 'Cerrar sesión' : undefined}
+			aria-label="Cerrar sesión"
+			class="gac-btn gac-btn-outline gac-btn-sm w-full"
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
-				width="16"
-				height="16"
+				width="14"
+				height="14"
 				viewBox="0 0 24 24"
 				fill="none"
 				stroke="currentColor"
 				stroke-width="2"
 				stroke-linecap="round"
 				stroke-linejoin="round"
-				class={isCollapsed ? '' : 'mr-2'}
-				><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline
-					points="16 17 21 12 16 7"
-				/><line x1="21" x2="9" y1="12" y2="12" /></svg
+				class={isCollapsed ? '' : 'mr-1'}
+				aria-hidden="true"
 			>
+				<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+				<polyline points="16 17 21 12 16 7" />
+				<line x1="21" x2="9" y1="12" y2="12" />
+			</svg>
 			{#if !isCollapsed}
-				Cerrar Sesión
+				<span>Cerrar sesión</span>
 			{/if}
 		</button>
 	</div>

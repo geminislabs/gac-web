@@ -13,17 +13,16 @@
 	let { plan: initialPlan, onSave } = $props();
 
 	/** @type {import('$lib/services/plans').Plan} */
-	let plan = $state(JSON.parse(JSON.stringify(initialPlan)));
+	// svelte-ignore state_referenced_locally
+	let plan = $state(structuredClone(initialPlan));
 	let isSaving = $state(false);
 
-	// Catalogs
 	/** @type {any[]} */
 	let availableProducts = $state([]);
 	/** @type {any[]} */
 	let availableCapabilities = $state([]);
 
-	// Local state for easier binding
-	/** @type {Object.<string, any>} */
+	/** @type {Record<string, any>} */
 	let capabilityValues = $state({});
 	/** @type {string} */
 	let selectedProductCode = $state('');
@@ -34,49 +33,53 @@
 				ProductsService.getAll({ is_active: true }),
 				PlansService.getAvailableCapabilities()
 			]);
-			availableProducts = productsResponse.products || [];
-			availableCapabilities = caps;
+			availableProducts = productsResponse?.products || productsResponse?.data || [];
+			availableCapabilities = Array.isArray(caps) ? caps : [];
 		} catch (err) {
 			console.error('Error loading catalogs:', err);
-			// @ts-ignore
-			toast.error('Error al cargar catálogos: ' + err.message);
+			toast.error('Error al cargar catálogos');
 		}
 	});
 
-	// Update local state when prop changes (only when plan ID changes)
 	$effect(() => {
 		const planId = initialPlan?.id;
-		if (planId) {
-			// Use untrack to prevent infinite loops
-			untrack(() => {
-				plan = JSON.parse(JSON.stringify(initialPlan));
-				// Initialize selected product code (single product)
-				const products = plan.products || [];
-				selectedProductCode = products.length > 0 ? products[0].code : '';
-				// Initialize capability values
-				const vals = {};
-				(plan.capabilities || []).forEach((c) => {
-					// Use 'value' if present (from GET), otherwise fall back to value_int/bool
-					vals[c.capability_code] = c.value !== undefined ? c.value : (c.value_int ?? c.value_bool);
-				});
-				capabilityValues = vals;
+		if (!planId) return;
+		untrack(() => {
+			plan = structuredClone(initialPlan);
+			const products = plan.products || [];
+			selectedProductCode = products.length > 0 ? products[0].code : '';
+			/** @type {Record<string, any>} */
+			const vals = {};
+			(plan.capabilities || []).forEach((c) => {
+				vals[c.capability_code] =
+					c.value !== undefined ? c.value : (c.value_int ?? c.value_bool);
 			});
-		}
+			capabilityValues = vals;
+		});
 	});
 
+	/** @param {SubmitEvent} e */
 	async function handleSubmit(e) {
 		e.preventDefault();
-
-		// Validate product selection
 		if (!selectedProductCode) {
 			toast.error('Debe seleccionar un producto antes de guardar');
 			return;
 		}
 
 		isSaving = true;
-
 		try {
-			// Prepare data for PATCH
+			/** @type {import('$lib/services/plans').PlanCapability[]} */
+			const capabilities = Object.entries(capabilityValues).map(([code, value]) => {
+				const def = availableCapabilities.find((d) => d.code === code);
+				/** @type {import('$lib/services/plans').PlanCapability} */
+				const item = { capability_code: code };
+				if (def?.value_type === 'int') item.value_int = parseInt(String(value), 10);
+				else if (def?.value_type === 'bool') item.value_bool = !!value;
+				else item.value = value;
+				return item;
+			});
+
+			/** @type {Partial<import('$lib/services/plans').Plan>} */
 			const updateData = {
 				name: plan.name,
 				code: plan.code,
@@ -85,65 +88,66 @@
 				price_yearly: plan.price_yearly,
 				is_active: plan.is_active,
 				product_codes: [selectedProductCode],
-				capabilities: Object.entries(capabilityValues).map(([code, value]) => {
-					const def = availableCapabilities.find((d) => d.code === code);
-					/** @type {any} */
-					const item = { capability_code: code };
-					if (def?.value_type === 'int') item.value_int = parseInt(value);
-					else if (def?.value_type === 'bool') item.value_bool = !!value;
-					else item.value = value;
-					return item;
-				})
+				capabilities
 			};
 
+			if (!plan.id) {
+				throw new Error('No se puede actualizar un plan sin ID');
+			}
 			await PlansService.update(plan.id, updateData);
-			toast.success('Plan actualizado exitosamente');
-			if (onSave) onSave();
+			toast.success('Plan actualizado correctamente');
+			onSave?.();
 		} catch (err) {
 			console.error('Error updating plan:', err);
-			// @ts-ignore
-			toast.error('Error al guardar el plan: ' + err.message);
+			toast.error('Error al guardar el plan');
 		} finally {
 			isSaving = false;
 		}
 	}
 </script>
 
-<div class="h-full flex flex-col bg-white">
-	<form onsubmit={handleSubmit} class="flex flex-col h-full">
-		<div class="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
+<div class="flex h-full flex-col bg-app-deep">
+	<form onsubmit={handleSubmit} class="flex h-full flex-col">
+		<div
+			class="flex items-center justify-between border-b p-4"
+			style="border-color: var(--color-border); background-color: var(--color-bg-tertiary)"
+		>
 			<div>
-				<h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider">
-					Detalle del Plan: {plan.name}
+				<h3 class="text-sm font-bold uppercase tracking-wider text-app">
+					Detalle del plan: {plan.name}
 				</h3>
-				<p class="text-xs text-slate-500">ID: {plan.id}</p>
+				<p class="font-mono text-xs text-app-muted">ID: {plan.id}</p>
 			</div>
 			<div class="flex gap-2">
 				<Button type="submit" variant="primary" size="sm" disabled={isSaving}>
-					{isSaving ? 'Guardando...' : 'Guardar Cambios'}
+					{isSaving ? 'Guardando…' : 'Guardar cambios'}
 				</Button>
 			</div>
 		</div>
 
-		<div class="flex-1 overflow-y-auto p-6 space-y-8">
-			<!-- Basic Info -->
+		<div class="flex-1 space-y-8 overflow-y-auto p-6">
+			<!-- Información general -->
 			<section class="space-y-4">
-				<div class="flex items-center justify-between border-b pb-2">
-					<h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest">
-						Información General
+				<div
+					class="flex items-center justify-between border-b pb-2"
+					style="border-color: var(--color-border)"
+				>
+					<h4 class="text-xs font-bold uppercase tracking-widest text-app-muted">
+						Información general
 					</h4>
-					<label class="flex items-center gap-2 cursor-pointer">
-						<span class="text-xs font-medium text-slate-500">Activo</span>
+					<label class="flex cursor-pointer items-center gap-2">
+						<span class="text-xs font-medium text-app-muted">Activo</span>
 						<div class="relative inline-flex items-center">
-							<input type="checkbox" bind:checked={plan.is_active} class="sr-only peer" />
+							<input type="checkbox" bind:checked={plan.is_active} class="peer sr-only" />
 							<div
-								class="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"
+								class="peer h-4 w-8 rounded-full transition-colors peer-checked:after:translate-x-full after:absolute after:top-[2px] after:left-[2px] after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-all"
+								style="background-color: {plan.is_active ? 'var(--color-success)' : 'var(--color-bg-elevated)'}"
 							></div>
 						</div>
 					</label>
 				</div>
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-					<Input label="Nombre del Plan" bind:value={plan.name} required />
+				<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+					<Input label="Nombre del plan" bind:value={plan.name} required />
 					<Input label="Código" bind:value={plan.code} required />
 					<div class="md:col-span-2">
 						<Input label="Descripción" bind:value={plan.description} />
@@ -151,46 +155,56 @@
 				</div>
 			</section>
 
-			<!-- Pricing -->
+			<!-- Precios -->
 			<section class="space-y-4">
-				<h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b pb-2">
+				<h4
+					class="border-b pb-2 text-xs font-bold uppercase tracking-widest text-app-muted"
+					style="border-color: var(--color-border)"
+				>
 					Precios (MXN)
 				</h4>
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-					<Input label="Precio Mensual" type="number" bind:value={plan.price_monthly} required />
-					<Input label="Precio Anual" type="number" bind:value={plan.price_yearly} required />
+				<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+					<Input label="Precio mensual" type="number" bind:value={plan.price_monthly} required />
+					<Input label="Precio anual" type="number" bind:value={plan.price_yearly} required />
 				</div>
 			</section>
 
-			<!-- Products -->
+			<!-- Producto -->
 			<section class="space-y-4">
-				<h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b pb-2">
-					Producto Asociado <span class="text-red-500">*</span>
+				<h4
+					class="border-b pb-2 text-xs font-bold uppercase tracking-widest text-app-muted"
+					style="border-color: var(--color-border)"
+				>
+					Producto asociado <span class="text-danger">*</span>
 				</h4>
 				{#if !selectedProductCode}
-					<p class="text-sm text-red-600">Debe seleccionar un producto antes de guardar el plan</p>
+					<p class="text-sm text-danger">
+						Debe seleccionar un producto antes de guardar el plan.
+					</p>
 				{/if}
 				<div class="space-y-3">
 					{#each availableProducts as product (product.code)}
+						{@const active = selectedProductCode === product.code}
 						<label
-							class="flex items-center p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors {selectedProductCode ===
-							product.code
-								? 'bg-blue-50 border-blue-200'
-								: ''}"
+							class="flex cursor-pointer items-center rounded-lg border p-3 transition-colors"
+							style={active
+								? 'background-color: var(--color-accent-soft); border-color: var(--color-accent-primary);'
+								: 'background-color: var(--color-bg-elevated); border-color: var(--color-border);'}
 						>
 							<input
 								type="radio"
 								name="product"
 								value={product.code}
 								bind:group={selectedProductCode}
-								class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+								class="h-4 w-4"
+								style="accent-color: var(--color-accent-primary)"
 								required
 							/>
-							<div class="ml-3">
-								<p class="text-sm font-medium text-slate-900">{product.name}</p>
-								<p class="text-xs text-slate-500">{product.code}</p>
+							<div class="ml-3 min-w-0">
+								<p class="text-sm font-medium text-app">{product.name}</p>
+								<p class="font-mono text-xs text-app-muted">{product.code}</p>
 								{#if product.description}
-									<p class="text-xs text-slate-400 mt-1">{product.description}</p>
+									<p class="mt-1 text-xs text-app-muted">{product.description}</p>
 								{/if}
 							</div>
 						</label>
@@ -200,26 +214,32 @@
 
 			<!-- Capabilities -->
 			<section class="space-y-4">
-				<h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b pb-2">
-					Capabilities & Límites
+				<h4
+					class="border-b pb-2 text-xs font-bold uppercase tracking-widest text-app-muted"
+					style="border-color: var(--color-border)"
+				>
+					Capabilities y límites
 				</h4>
-				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+				<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
 					{#each availableCapabilities as cap (cap.code)}
-						<div class="flex flex-col space-y-1">
-							<span class="text-xs font-medium text-slate-500" title={cap.description}>
+						<div class="flex flex-col gap-1.5">
+							<span class="text-xs font-medium text-app-muted" title={cap.description}>
 								{cap.code}
 							</span>
 							{#if cap.value_type === 'bool'}
-								<label class="relative inline-flex items-center cursor-pointer mt-1">
+								<label class="relative mt-1 inline-flex cursor-pointer items-center">
 									<input
 										type="checkbox"
 										bind:checked={capabilityValues[cap.code]}
-										class="sr-only peer"
+										class="peer sr-only"
 									/>
 									<div
-										class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"
+										class="peer h-5 w-9 rounded-full transition-colors peer-checked:after:translate-x-full after:absolute after:top-[2px] after:left-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all"
+										style="background-color: {capabilityValues[cap.code]
+											? 'var(--color-accent-primary)'
+											: 'var(--color-bg-elevated)'}"
 									></div>
-									<span class="ml-3 text-sm font-medium text-slate-700">
+									<span class="ml-3 text-sm text-app-secondary">
 										{capabilityValues[cap.code] ? 'Habilitado' : 'Deshabilitado'}
 									</span>
 								</label>
@@ -227,7 +247,7 @@
 								<input
 									type="number"
 									bind:value={capabilityValues[cap.code]}
-									class="flex h-9 w-full rounded-md border border-slate-300 bg-white px-3 py-1 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-slate-400"
+									class="gac-input h-9"
 								/>
 							{/if}
 						</div>

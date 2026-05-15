@@ -1,54 +1,74 @@
 import { internalApi } from '$lib/services/api';
 
 /**
- * Service to interact with the Commands API
+ * @typedef {Object} DeviceCommand
+ * @property {string} command_id
+ * @property {string} device_id
+ * @property {string} command
+ * @property {string} status
+ * @property {string} [media]
+ * @property {Record<string, any>} [command_metadata]
+ * @property {string} [requested_at]
+ * @property {string} [updated_at]
  */
-export const CommandsService = {
-	/*
-	 * Create a new command
-	 */
 
+/**
+ * @typedef {Object} CommandQueryParams
+ * @property {number} [limit]
+ * @property {number} [offset]
+ * @property {string} [status_filter]
+ */
+
+/**
+ * @typedef {Object} CommandCreatePayload
+ * @property {string} device_id
+ * @property {string} command
+ * @property {string} media
+ */
+
+export const CommandsService = {
 	/**
-	 * Create a new command
-	 * @param {Object} data
-	 * @param {string} data.device_id
-	 * @param {string} data.command
-	 * @param {string} data.media
-	 * @returns {Promise<Object>}
+	 * Crea un nuevo comando para un dispositivo.
+	 * @param {CommandCreatePayload} data
+	 * @returns {Promise<DeviceCommand>}
 	 */
 	async create(data) {
-		return internalApi('/commands', {
-			method: 'POST',
-			body: JSON.stringify(data)
-		});
+		return /** @type {Promise<DeviceCommand>} */ (
+			internalApi('/commands', {
+				method: 'POST',
+				body: JSON.stringify(data)
+			})
+		);
 	},
 
 	/**
-	 * Get commands for a specific device
+	 * Obtiene comandos enviados a un dispositivo.
 	 * @param {string} deviceId
-	 * @param {Object} params - Query parameters (limit, offset, status_filter)
-	 * @returns {Promise<Object>} - { commands: [], total: number }
+	 * @param {CommandQueryParams} [params]
+	 * @returns {Promise<{ commands: DeviceCommand[], total: number }>}
 	 */
 	async getByDevice(deviceId, params = {}) {
 		const searchParams = new URLSearchParams();
 		Object.entries(params).forEach(([key, value]) => {
 			if (value !== null && value !== undefined && value !== '') {
-				searchParams.append(key, value);
+				searchParams.append(key, String(value));
 			}
 		});
 
 		const queryString = searchParams.toString() ? `?${searchParams.toString()}` : '';
-		return internalApi(`/commands/device/${deviceId}${queryString}`);
+		return /** @type {Promise<{ commands: DeviceCommand[], total: number }>} */ (
+			internalApi(`/commands/device/${deviceId}${queryString}`)
+		);
 	},
 
 	/**
-	 * Sync command status with KORE
+	 * Sincroniza un comando con el proveedor (KORE).
 	 * @param {string} commandId
-	 * @returns {Promise<Object>}
+	 * @returns {Promise<DeviceCommand>}
 	 */
 	async sync(commandId) {
-		return internalApi(`/commands/${commandId}/sync`, {
-			method: 'POST'
-		});
+		return /** @type {Promise<DeviceCommand>} */ (
+			internalApi(`/commands/${commandId}/sync`, { method: 'POST' })
+		);
 	}
 };

@@ -1,0 +1,139 @@
+/* ===================================================================
+   BASE — Reset suave, tipografía global y scrollbar custom.
+   Aplica para todos los temas (depende de variables de themes.css).
+   ================================================================== */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	font-family: var(--font-sans);
+	font-size: var(--font-size-md);
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	background-color: var(--color-bg-primary);
+	color: var(--color-text-primary);
+	transition:
+		background-color var(--transition-base),
+		color var(--transition-base);
+}
+
+body {
+	min-height: 100vh;
+}
+
+#svelte,
+[data-sveltekit-prefetch],
+[data-sveltekit-preload-data] {
+	min-height: 100%;
+}
+
+/* === FOCUS UNIFICADO === */
+:focus-visible {
+	outline: 2px solid var(--color-accent-primary);
+	outline-offset: 2px;
+	border-radius: var(--radius-xs);
+}
+
+/* === ENLACES === */
+a {
+	color: inherit;
+	text-decoration: none;
+}
+
+/* === SELECCIÓN DE TEXTO === */
+::selection {
+	background-color: var(--color-accent-soft);
+	color: var(--color-text-primary);
+}
+
+/* === SCROLLBAR CUSTOM ===
+   - Firefox: scrollbar-width / scrollbar-color
+   - WebKit (Chrome/Safari/Edge): pseudo-elements */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+	background: var(--color-scrollbar-track);
+	border-radius: var(--radius-pill);
+}
+
+*::-webkit-scrollbar-thumb {
+	background: var(--color-scrollbar-thumb);
+	border-radius: var(--radius-pill);
+	border: 2px solid transparent;
+	background-clip: padding-box;
+	transition: background var(--transition-fast);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+	background: var(--color-scrollbar-thumb-hover);
+	background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+	background: transparent;
+}
+
+/* === AUTOFILL CONSISTENTE EN TEMAS OSCUROS === */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+	-webkit-text-fill-color: var(--color-input-text);
+	transition: background-color 600000s 0s, color 600000s 0s;
+	caret-color: var(--color-input-text);
+}
+
+/* === IMÁGENES RESPONSIVAS POR DEFECTO === */
+img,
+svg,
+video,
+canvas {
+	display: block;
+	max-width: 100%;
+}
+
+/* === HEADINGS BASE === */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	margin: 0;
+	font-weight: 600;
+	color: var(--color-text-primary);
+	letter-spacing: -0.01em;
+}
+
+p {
+	margin: 0;
+}
+
+/* === Reduced motion === */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}

@@ -1,30 +1,107 @@
 import { api } from './api';
 
-export const orderService = {
+/**
+ * @typedef {Object} OrderItem
+ * @property {string} item_id
+ * @property {string} order_id
+ * @property {string} [device_id]
+ * @property {string} [product_key]
+ * @property {number} quantity
+ * @property {string} unit_price
+ * @property {string} created_at
+ */
+
+/**
+ * @typedef {Object} Order
+ * @property {string} order_id
+ * @property {string} client_id
+ * @property {string} [created_by]
+ * @property {string} status
+ * @property {string} total_amount
+ * @property {string} [notes]
+ * @property {OrderItem[]} items
+ * @property {string} created_at
+ * @property {string} updated_at
+ */
+
+/**
+ * @typedef {Object} OrderItemCreatePayload
+ * @property {string} [device_id]
+ * @property {string} [product_key]
+ * @property {number} quantity
+ * @property {string|number} unit_price
+ */
+
+/**
+ * @typedef {Object} OrderCreatePayload
+ * @property {string} client_id
+ * @property {string} [notes]
+ * @property {OrderItemCreatePayload[]} items
+ */
+
+/**
+ * @typedef {Object} OrderListParams
+ * @property {number} [skip]
+ * @property {number} [limit]
+ * @property {string} [status]
+ */
+
+/**
+ * @template T
+ * @typedef {{ message: string, data: T }} ApiEnvelope
+ */
+
+export const OrdersService = {
 	/**
-	 * Create a new order
-	 * @param {Object} orderData
+	 * Lista paginada de órdenes (admin).
+	 * @param {OrderListParams} [params]
+	 * @returns {Promise<Order[]>}
 	 */
-	createOrder: async (orderData) => {
-		return await api('orders', {
-			method: 'POST',
-			body: JSON.stringify(orderData)
-		});
+	async list(params = {}) {
+		const search = new URLSearchParams();
+		if (params.skip != null) search.append('skip', String(params.skip));
+		if (params.limit != null) search.append('limit', String(params.limit));
+		if (params.status) search.append('status', params.status);
+
+		const qs = search.toString() ? `?${search.toString()}` : '';
+		/** @type {ApiEnvelope<Order[]>} */
+		const response = await api(`/orders${qs}`);
+		return response?.data ?? [];
 	},
 
 	/**
-	 * Get an order by ID
+	 * Obtiene una orden por su ID.
 	 * @param {string} orderId
+	 * @returns {Promise<Order>}
 	 */
-	getOrder: async (orderId) => {
-		return await api(`orders/${orderId}`);
+	async getById(orderId) {
+		/** @type {ApiEnvelope<Order>} */
+		const response = await api(`/orders/${orderId}`);
+		return response.data;
 	},
 
 	/**
-	 * Get all orders for a client
-	 * @param {string} clientId
+	 * Crea una nueva orden.
+	 * @param {OrderCreatePayload} payload
+	 * @returns {Promise<Order>}
 	 */
-	getClientOrders: async (clientId) => {
-		return await api(`clients/${clientId}/orders`);
+	async create(payload) {
+		/** @type {ApiEnvelope<Order>} */
+		const response = await api('/orders', {
+			method: 'POST',
+			body: JSON.stringify(payload)
+		});
+		return response.data;
+	},
+
+	/**
+	 * Lista órdenes de un cliente específico.
+	 * @param {string} clientId
+	 * @returns {Promise<Order[]>}
+	 */
+	async getByClient(clientId) {
+		/** @type {ApiEnvelope<Order[]>} */
+		const response = await api(`/clients/${clientId}/orders`);
+		return response.data ?? [];
 	}
 };

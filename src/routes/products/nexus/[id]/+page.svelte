@@ -101,78 +101,77 @@
 	}
 
 	/** @param {string} status */
-	function getStatusColor(status) {
+	function getStatusBadge(status) {
 		switch (status) {
 			case 'active':
-				return 'bg-green-100 text-green-700';
+				return 'gac-badge gac-badge-success';
 			case 'inventory':
-				return 'bg-blue-100 text-blue-700';
+				return 'gac-badge gac-badge-info';
 			case 'maintenance':
-				return 'bg-orange-100 text-orange-700';
+				return 'gac-badge gac-badge-warning';
 			default:
-				return 'bg-slate-100 text-slate-700';
+				return 'gac-badge gac-badge-neutral';
 		}
 	}
 </script>
 
-<div class="flex flex-col min-h-screen relative">
+<div class="relative flex min-h-screen flex-col bg-app text-app">
 	<Topbar title={`Nexus / ${deviceId}`}>
 		<a href="/products/nexus">
 			<Button variant="secondary" size="sm">Volver</Button>
 		</a>
 	</Topbar>
 
-	<div class="p-8 max-w-5xl mx-auto w-full">
+	<div class="mx-auto w-full max-w-5xl p-8">
 		{#if isLoading}
 			<div class="flex justify-center py-12">
-				<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+				<div
+					class="h-8 w-8 animate-spin rounded-full border-b-2"
+					style="border-color: var(--color-accent)"
+				></div>
 			</div>
 		{:else if device}
-			<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-				<!-- Main Info -->
-				<div class="lg:col-span-2 space-y-6">
+			<div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+				<div class="space-y-6 lg:col-span-2">
 					<Card class="p-6">
-						<div class="flex justify-between items-start mb-6">
+						<div class="mb-6 flex items-start justify-between">
 							<div>
-								<h2 class="text-xl font-bold text-slate-900">
-									{device.model}
-								</h2>
-								<p class="text-slate-500 text-sm">
-									{device.device_id}
-								</p>
+								<h2 class="text-xl font-bold text-app">{device.model}</h2>
+								<p class="text-sm text-app-muted">{device.device_id}</p>
 							</div>
-							<span
-								class="px-3 py-1 rounded-full text-sm font-medium {getStatusColor(device.status)}"
-							>
+							<span class={getStatusBadge(device.status)}>
 								{device.status.toUpperCase()}
 							</span>
 						</div>
 
-						<div class="grid grid-cols-2 gap-6 mb-6">
+						<div class="mb-6 grid grid-cols-2 gap-6">
 							<div>
-								<p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Proveedor</p>
-								<p class="text-slate-900 mt-1">
-									{device.provider}
+								<p class="text-xs font-medium uppercase tracking-wider text-app-muted">
+									Proveedor
 								</p>
+								<p class="mt-1 text-app">{device.provider}</p>
 							</div>
 							<div>
-								<p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Lote</p>
-								<p class="text-slate-900 mt-1">
-									{device.batch}
-								</p>
+								<p class="text-xs font-medium uppercase tracking-wider text-app-muted">Lote</p>
+								<p class="mt-1 text-app">{device.batch}</p>
 							</div>
 						</div>
 
 						<div>
-							<p class="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Notas</p>
-							<p class="text-slate-700 bg-slate-50 p-3 rounded-md text-sm">
+							<p class="mb-1 text-xs font-medium uppercase tracking-wider text-app-muted">
+								Notas
+							</p>
+							<p
+								class="rounded-md p-3 text-sm"
+								style="background: var(--color-bg-tertiary); color: var(--color-text-secondary); border: 1px solid var(--color-border)"
+							>
 								{device.notes}
 							</p>
 						</div>
 					</Card>
 
 					<Card class="p-6">
-						<h3 class="text-lg font-semibold text-slate-900 mb-4">Historial de Estados</h3>
+						<h3 class="mb-4 text-lg font-semibold text-app">Historial de Estados</h3>
 						<div class="flow-root">
 							<ul role="list" class="-mb-8">
 								{#each history as event, i (i)}
@@ -180,17 +179,20 @@
 										<div class="relative pb-8">
 											{#if i !== history.length - 1}
 												<span
-													class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-slate-200"
+													class="absolute top-4 left-4 -ml-px h-full w-0.5"
+													style="background: var(--color-border)"
 													aria-hidden="true"
 												></span>
 											{/if}
 											<div class="relative flex space-x-3">
 												<div>
 													<span
-														class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center ring-8 ring-white"
+														class="flex h-8 w-8 items-center justify-center rounded-full"
+														style="background: var(--color-bg-tertiary); border: 1px solid var(--color-border)"
 													>
 														<svg
-															class="h-4 w-4 text-slate-500"
+															class="h-4 w-4"
+															style="color: var(--color-text-muted)"
 															xmlns="http://www.w3.org/2000/svg"
 															fill="none"
 															viewBox="0 0 24 24"
@@ -205,17 +207,15 @@
 														</svg>
 													</span>
 												</div>
-												<div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+												<div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
 													<div>
-														<p class="text-sm text-slate-900 font-medium">
+														<p class="text-sm font-medium text-app">
 															{event.status.toUpperCase()}
-															<span class="font-normal text-slate-500">by {event.user}</span>
+															<span class="font-normal text-app-muted">by {event.user}</span>
 														</p>
-														<p class="text-sm text-slate-500 mt-1">
-															{event.notes}
-														</p>
+														<p class="mt-1 text-sm text-app-muted">{event.notes}</p>
 													</div>
-													<div class="text-right text-sm whitespace-nowrap text-slate-500">
+													<div class="whitespace-nowrap text-right text-sm text-app-muted">
 														<time datetime={event.date}>{event.date}</time>
 													</div>
 												</div>
@@ -228,20 +228,20 @@
 					</Card>
 				</div>
 
-				<!-- Sidebar Actions -->
 				<div class="space-y-6">
 					<Card class="p-6">
-						<h3 class="text-sm font-medium text-slate-900 uppercase tracking-wider mb-4">
+						<h3 class="mb-4 text-sm font-medium uppercase tracking-wider text-app">
 							Cliente Asignado
 						</h3>
 						{#if device.client}
-							<div class="bg-blue-50 p-4 rounded-md mb-4 border border-blue-100">
-								<p class="font-semibold text-blue-900">
+							<div
+								class="mb-4 rounded-md p-4"
+								style="background: var(--color-accent-soft); border: 1px solid var(--color-accent)"
+							>
+								<p class="font-semibold" style="color: var(--color-accent)">
 									{device.client.name}
 								</p>
-								<p class="text-xs text-blue-600 mt-1">
-									ID: {device.client.id}
-								</p>
+								<p class="mt-1 text-xs text-app-muted">ID: {device.client.id}</p>
 							</div>
 							<Button
 								variant="secondary"
@@ -252,18 +252,23 @@
 							</Button>
 						{:else}
 							<div
-								class="text-center py-6 bg-slate-50 rounded-md mb-4 border border-slate-100 border-dashed"
+								class="mb-4 rounded-md py-6 text-center"
+								style="background: var(--color-bg-tertiary); border: 1px dashed var(--color-border)"
 							>
-								<p class="text-slate-500 text-sm">Sin cliente asignado</p>
+								<p class="text-sm text-app-muted">Sin cliente asignado</p>
 							</div>
-							<Button variant="primary" class="w-full" onclick={() => (showAssignModal = true)}>
+							<Button
+								variant="primary"
+								class="w-full"
+								onclick={() => (showAssignModal = true)}
+							>
 								Asignar a Cliente
 							</Button>
 						{/if}
 					</Card>
 
 					<Card class="p-6">
-						<h3 class="text-sm font-medium text-slate-900 uppercase tracking-wider mb-4">
+						<h3 class="mb-4 text-sm font-medium uppercase tracking-wider text-app">
 							Acciones
 						</h3>
 						<div class="space-y-3">
@@ -297,9 +302,9 @@
 									stroke-linecap="round"
 									stroke-linejoin="round"
 									class="mr-2"
-									><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path
-										d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
-									/></svg
+									><path d="M3 6h18" /><path
+										d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"
+									/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg
 								>
 								Eliminar Dispositivo
 							</Button>
@@ -308,34 +313,24 @@
 				</div>
 			</div>
 		{:else}
-			<div class="text-center py-12">
-				<p class="text-slate-500">Dispositivo no encontrado.</p>
+			<div class="py-12 text-center">
+				<p class="text-app-muted">Dispositivo no encontrado.</p>
 			</div>
 		{/if}
 	</div>
 
-	<!-- Assign Modal -->
 	{#if showAssignModal}
-		<div
-			class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
-		>
-			<div
-				class="bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200"
-			>
-				<h3 class="text-lg font-bold text-slate-900 mb-4">Asignar a Cliente</h3>
-				<p class="text-sm text-slate-500 mb-6">
-					Selecciona un cliente para asignar el dispositivo <strong>{device.device_id}</strong>.
+		<div class="gac-modal-backdrop">
+			<div class="gac-modal p-6">
+				<h3 class="mb-4 text-lg font-bold text-app">Asignar a Cliente</h3>
+				<p class="mb-6 text-sm text-app-muted">
+					Selecciona un cliente para asignar el dispositivo
+					<strong class="text-app">{device.device_id}</strong>.
 				</p>
 
 				<div class="mb-6">
-					<label for="client-select" class="block text-sm font-medium text-slate-700 mb-1"
-						>Cliente</label
-					>
-					<select
-						id="client-select"
-						bind:value={selectedClient}
-						class="w-full h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
-					>
+					<label for="client-select" class="gac-label">Cliente</label>
+					<select id="client-select" bind:value={selectedClient} class="gac-input">
 						<option value="" disabled selected>Seleccionar cliente...</option>
 						{#each MOCK_CLIENTS as client (client.id)}
 							<option value={client.id}>{client.name}</option>
@@ -350,11 +345,7 @@
 						disabled={!selectedClient || assignLoading}
 						onclick={handleAssignClient}
 					>
-						{#if assignLoading}
-							Asignando...
-						{:else}
-							Confirmar Asignación
-						{/if}
+						{assignLoading ? 'Asignando...' : 'Confirmar Asignación'}
 					</Button>
 				</div>
 			</div>

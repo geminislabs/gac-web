@@ -1,93 +1,130 @@
 import { api } from './api';
 
+/**
+ * @typedef {Object} ApiUser
+ * @property {string} user_id
+ * @property {string} email
+ * @property {string|null} full_name
+ * @property {boolean} is_active
+ * @property {string[]} roles
+ */
+
+/**
+ * @typedef {Object} ApiRole
+ * @property {string} role_id
+ * @property {string} name
+ */
+
+/**
+ * Servicio de gestión de usuarios y roles internos (gac-api).
+ * Mantiene una API estable para los componentes consumidores.
+ */
 export const userService = {
 	/**
-	 * Get all users
+	 * Lista usuarios paginados.
 	 * @param {number} skip
 	 * @param {number} limit
+	 * @returns {Promise<{ message: string, data: ApiUser[] }>}
 	 */
-	getUsers: async (skip = 0, limit = 100) => {
-		return await api(`users?skip=${skip}&limit=${limit}`);
+	getUsers(skip = 0, limit = 100) {
+		return api(`/users?skip=${skip}&limit=${limit}`);
 	},
 
 	/**
-	 * Create a new user
-	 * @param {Object} userData
+	 * Crea un usuario interno.
+	 * @param {{ email: string, password: string, full_name?: string, is_active?: boolean, roles?: string[] }} userData
 	 */
-	createUser: async (userData) => {
-		return await api('users', {
+	createUser(userData) {
+		return api('/users', {
 			method: 'POST',
 			body: JSON.stringify(userData)
 		});
 	},
 
 	/**
-	 * Get a user by ID
 	 * @param {string} userId
 	 */
-	getUser: async (userId) => {
-		return await api(`users/${userId}`);
+	getUser(userId) {
+		return api(`/users/${userId}`);
 	},
 
 	/**
-	 * Update a user
+	 * Actualiza atributos no sensibles del usuario.
 	 * @param {string} userId
-	 * @param {Object} userData
+	 * @param {{ full_name?: string, is_active?: boolean, roles?: string[] }} userData
 	 */
-	updateUser: async (userId, userData) => {
-		return await api(`users/${userId}`, {
+	updateUser(userId, userData) {
+		return api(`/users/${userId}`, {
 			method: 'PATCH',
 			body: JSON.stringify(userData)
 		});
 	},
 
 	/**
-	 * Delete a user (soft delete)
+	 * Soft delete (desactiva al usuario).
 	 * @param {string} userId
 	 */
-	deleteUser: async (userId) => {
-		return await api(`users/${userId}`, {
-			method: 'DELETE'
+	deleteUser(userId) {
+		return api(`/users/${userId}`, { method: 'DELETE' });
+	},
+
+	/**
+	 * Reset administrativo de contraseña.
+	 * @param {string} userId
+	 * @param {string} newPassword
+	 */
+	resetPassword(userId, newPassword) {
+		return api(`/users/${userId}/password`, {
+			method: 'PATCH',
+			body: JSON.stringify({ new_password: newPassword })
 		});
 	},
 
 	/**
-	 * Get all roles
+	 * Cambio de contraseña del usuario autenticado.
+	 * @param {string} newPassword
 	 */
-	getRoles: async () => {
-		return await api('roles');
+	changeMyPassword(newPassword) {
+		return api('/auth/password', {
+			method: 'PATCH',
+			body: JSON.stringify({ new_password: newPassword })
+		});
 	},
 
 	/**
-	 * Create a new role
+	 * Lista roles disponibles.
+	 * @returns {Promise<{ message: string, data: ApiRole[] }>}
+	 */
+	getRoles() {
+		return api('/roles');
+	},
+
+	/**
+	 * Crea un rol.
 	 * @param {string} name
 	 */
-	createRole: async (name) => {
-		return await api('roles', {
+	createRole(name) {
+		return api('/roles', {
 			method: 'POST',
 			body: JSON.stringify({ name })
 		});
 	},
 
 	/**
-	 * Assign a role to a user
+	 * Asigna un rol a un usuario.
 	 * @param {string} userId
 	 * @param {string} roleId
 	 */
-	assignRole: async (userId, roleId) => {
-		return await api(`users/${userId}/roles/${roleId}`, {
-			method: 'POST'
-		});
+	assignRole(userId, roleId) {
+		return api(`/users/${userId}/roles/${roleId}`, { method: 'POST' });
 	},
 
 	/**
-	 * Revoke a role from a user
+	 * Revoca un rol de un usuario.
 	 * @param {string} userId
 	 * @param {string} roleId
 	 */
-	revokeRole: async (userId, roleId) => {
-		return await api(`users/${userId}/roles/${roleId}`, {
-			method: 'DELETE'
-		});
+	revokeRole(userId, roleId) {
+		return api(`/users/${userId}/roles/${roleId}`, { method: 'DELETE' });
 	}
 };

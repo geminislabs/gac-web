@@ -91,17 +91,19 @@ export const refreshSession = async () => {
 	if (!currentAuth.refreshToken) return false;
 
 	try {
-		// POST /auth/refresh?refresh_token=...
-		const response = await api(`/auth/refresh?refresh_token=${currentAuth.refreshToken}`, {
-			method: 'POST'
+		const response = await api('/auth/refresh', {
+			method: 'POST',
+			body: JSON.stringify({ refresh_token: currentAuth.refreshToken })
 		});
 
-		const newToken = response.data?.access_token;
+		const newAccess = response?.data?.access_token;
+		const newRefresh = response?.data?.refresh_token;
 
-		if (newToken) {
+		if (newAccess) {
 			auth.update((s) => ({
 				...s,
-				token: newToken
+				token: newAccess,
+				refreshToken: newRefresh ?? s.refreshToken
 			}));
 			return true;
 		}

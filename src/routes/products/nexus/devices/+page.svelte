@@ -2,117 +2,82 @@
 	import Topbar from '$lib/components/layout/Topbar.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
-	// import Card from '$lib/components/ui/Card.svelte';
+
 	import CommandPanel from '$lib/components/nexus/CommandPanel.svelte';
 	import AssignmentPanel from '$lib/components/nexus/AssignmentPanel.svelte';
+
 	import { DevicesService } from '$lib/services/devices';
 	import { TripsService } from '$lib/services/trips';
-	import { goto } from '$app/navigation';
+
 	import { onMount, onDestroy } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	// @ts-ignore
-	import { GoogleMapEngine, TripReplayController } from '@jesusCabrera84/map-engine';
 
-	/**
-	 * @typedef {Object} Device
-	 * @property {string} [device_id]
-	 * @property {string} [iccid]
-	 * @property {string} [brand]
-	 * @property {string} [model]
-	 * @property {string} [status]
-	 * @property {string} [client_id]
-	 * @property {string} [last_comm_at]
-	 */
+	import { Loader } from '@googlemaps/js-api-loader';
 
-	/** @type {Device[]} */
+	/** @type {import('$lib/services/devices').Device[]} */
 	let devices = $state([]);
 	let isLoading = $state(true);
+
 	let searchTerm = $state('');
+
 	/** @type {string | null} */
 	let selectedDeviceId = $state(null);
-	let activeTab = $state('commands'); // 'commands', 'communications', or 'assignment'
+
+	let activeTab = $state('commands');
+
+	let selectedDate = $state('');
+
+	/** @type {string | null} */
+	let lastCommunicationTime = $state(null);
+
+	let sidebarWidth = $state(800);
+	let isDragging = $state(false);
+	let sidebarTab = $state('trips');
+
+	/** @type {import('$lib/services/trips').Trip[]} */
+	let trips = $state([]);
+	let isLoadingTrips = $state(false);
+
+	/** @type {string | null} */
+	let selectedTripId = $state(null);
+
+	let isPlaying = $state(false);
+	let isPaused = $state(false);
+
+	/** @type {import('$lib/services/devices').DeviceCommunication[]} */
+	let communications = $state([]);
+	let isLoadingCommunications = $state(false);
+
+	let hiddenColumns = new SvelteSet();
+	let showColumnSelector = $state(false);
+
+	/** @type {HTMLElement | undefined} */
+	let mapContainer = $state();
+
+	/** @type {google.maps.Map | null} */
+	let map = $state(null);
+
+	/** @type {any} */
+	let googleRef = $state(null);
+
+	/** @type {Map<string, google.maps.Marker>} */
+	let vehicleMarkers = new Map();
+
+	/** @type {WebSocket | null} */
+	let socket = $state(null);
 
 	/** @type {string[]} */
 	let selectedDevicesForAssignment = $state([]);
 	let isAssignmentMode = $state(false);
 
-	let selectedDate = $state('');
 	/** @type {string | null} */
-	let lastCommunicationTime = $state(null);
+	let streamDeviceId = $state(null);
 
-	// Sidebar & Resizable state
-	let sidebarWidth = $state(800); // Default to a larger width, roughly 70% of typical 1366 screen minus main sidebar
-	let isDragging = $state(false);
-	let sidebarTab = $state('trips'); // 'trips' or 'communications'
+	let mapInitialized = $state(false);
 
-	/**
-	 * @typedef {Object} Trip
-	 * @property {string} trip_id
-	 * @property {string} device_id
-	 * @property {string} start_timestamp
-	 * @property {string} end_timestamp
-	 * @property {number} [distance_km]
-	 * @property {number} [duration_minutes]
-	 * @property {any[]} [points]
-	 * @property {any[]} [alerts]
-	 */
-
-	/**
-	 * @typedef {Object} Communication
-	 * @property {string} [uuid]
-	 * @property {string} [device_id]
-	 * @property {string} [received_at]
-	 * @property {number} [latitude]
-	 * @property {number} [longitude]
-	 * @property {number} [lat]
-	 * @property {number} [lng]
-	 * @property {number} [speed]
-	 * @property {number} [speedKmh]
-	 * @property {number} [course]
-	 * @property {number} [heading]
-	 * @property {any} [metadata]
-	 * @property {any} [decoded]
-	 */
-
-	// Trips data
-	/** @type {Trip[]} */
-	let trips = $state([]);
-	let isLoadingTrips = $state(false);
-	// Trip Replay state
-	/** @type {string | null} */
-	let selectedTripId = $state(null);
-	let isPlaying = $state(false);
-	let isPaused = $state(false);
-	/** @type {TripReplayController | null} */
-	let tripReplay = $state(null);
-
-	// Communications data
-	/** @type {Communication[]} */
-	let communications = $state([]);
-	let isLoadingCommunications = $state(false);
-	let hiddenColumns = new SvelteSet();
-	let showColumnSelector = $state(false);
-
-	let allColumns = $derived(
+	const allColumns = $derived(
 		communications.length > 0 ? Object.keys(communications[0] || {}).filter((k) => k !== 'id') : []
 	);
-
-	/** @param {string} col */
-	function toggleColumn(col) {
-		if (hiddenColumns.has(col)) {
-			hiddenColumns.delete(col);
-		} else {
-			hiddenColumns.add(col);
-		}
-	}
-
-	// Map related state
-	let mapContainer = $state();
-	/** @type {GoogleMapEngine | null} */
-	let mapEngine = $state(null);
-
-	/** @type {WebSocket | null} */
-	let socket = $state(null);
 
 	onMount(async () => {
 		const urlParams = new URLSearchParams(window.location.search);
@@ -121,120 +86,41 @@
 		await loadDevices();
 
 		if (deviceIdParam) {
-			// Ensure the device exists in our list before selecting
 			const deviceExists = devices.some((d) => d.device_id === deviceIdParam);
-			if (deviceExists) {
-				selectedDeviceId = deviceIdParam;
-			}
+			if (deviceExists) selectedDeviceId = deviceIdParam;
 		}
 
-		if (typeof window !== 'undefined') {
-			window.addEventListener('mousemove', handleResize);
-			window.addEventListener('mouseup', stopResize);
-		}
+		window.addEventListener('mousemove', handleResize);
+		window.addEventListener('mouseup', stopResize);
 	});
 
 	onDestroy(() => {
-		if (typeof window !== 'undefined') {
-			window.removeEventListener('mousemove', handleResize);
-			window.removeEventListener('mouseup', stopResize);
-		}
+		window.removeEventListener('mousemove', handleResize);
+		window.removeEventListener('mouseup', stopResize);
 		cleanupStream();
+		clearAllMarkers();
 	});
 
-	function startResize() {
-		isDragging = true;
-		// Initialize resize if needed
-	}
-
-	/** @param {MouseEvent} event */
-	function handleResize(event) {
-		if (!isDragging) return;
-		const newWidth = event.clientX - 64; // Adjusted offset for minimized/normal sidebar, defaulting to small? Wait, we need to know main sidebar width.
-		// For now assuming the offset is handled relative to clientX. The previous code had "- 300".
-		// Responsive logic needed later. Let's just trust the user wants it BIG.
-		// newWidth is the width of the sidebar.
-		if (newWidth > 200 && newWidth < 1200) {
-			// Increased max width
-			sidebarWidth = newWidth;
+	$effect(() => {
+		if (mapContainer && !mapInitialized) {
+			initMap();
 		}
-	}
-
-	function stopResize() {
-		isDragging = false;
-	}
-
-	// ... (rest of lifecycle/resize unchanged)
-
-	// ...
-
-	// Handle device selection or tab change
-	/** @type {string | null} */
-	let streamDeviceId = $state(null);
-
-	function toggleAssignmentMode() {
-		isAssignmentMode = !isAssignmentMode;
-		if (!isAssignmentMode) {
-			selectedDevicesForAssignment = [];
-			if (activeTab === 'assignment') activeTab = 'commands';
-		} else {
-			// When entering assignment mode, if we have a selected device that is 'new', auto-select it?
-			// User requested: "seleccionar varios equipos, siempre y cuando su estatus sea nuevo"
-			// The table logic will handle selection.
-			// Clear single selection to focus on batch assignment? Maybe not necessary but cleaner.
-			selectedDeviceId = null;
-			activeTab = 'assignment';
-		}
-	}
-
-	/** @param {string} deviceId */
-	function toggleDeviceSelection(deviceId) {
-		if (selectedDevicesForAssignment.includes(deviceId)) {
-			selectedDevicesForAssignment = selectedDevicesForAssignment.filter((id) => id !== deviceId);
-		} else {
-			selectedDevicesForAssignment = [...selectedDevicesForAssignment, deviceId];
-		}
-	}
-
-	function selectAllNewDevices() {
-		// filter filteredDevices for 'new' status
-		const newDevices = filteredDevices
-			.filter((d) => d.status === 'nuevo')
-			.map((d) => d.device_id || '');
-		if (selectedDevicesForAssignment.length === newDevices.length && newDevices.length > 0) {
-			selectedDevicesForAssignment = [];
-		} else {
-			selectedDevicesForAssignment = newDevices;
-		}
-	}
+	});
 
 	$effect(() => {
-		console.log(
-			'Effect triggered. activeTab:',
-			activeTab,
-			'selectedDeviceId:',
-			selectedDeviceId,
-			'mapEngine:',
-			!!mapEngine
-		);
-		const shouldStream = activeTab === 'communications' && selectedDeviceId && mapEngine;
+		const shouldStream = activeTab === 'communications' && selectedDeviceId && map;
 
 		if (shouldStream) {
-			console.log('shouldStream is TRUE. streamDeviceId:', streamDeviceId);
 			if (streamDeviceId !== selectedDeviceId) {
-				console.log('Switching stream device from', streamDeviceId, 'to', selectedDeviceId);
 				streamDeviceId = selectedDeviceId;
-				if (selectedDeviceId) {
-					loadDeviceDataAndConnectStream(selectedDeviceId);
-				}
-				// Load data for the active internal tab
+				if (selectedDeviceId) loadDeviceDataAndConnectStream(selectedDeviceId);
+
 				if (selectedDate) {
 					if (sidebarTab === 'trips') loadTrips();
 					if (sidebarTab === 'history') loadCommunications();
 				}
 			}
 		} else {
-			console.log('shouldStream is FALSE');
 			if (streamDeviceId) {
 				streamDeviceId = null;
 				cleanupStream();
@@ -244,113 +130,160 @@
 		}
 	});
 
-	// Effect to reload data when date or sidebar tab changes
 	$effect(() => {
 		if (activeTab === 'communications' && selectedDeviceId && selectedDate) {
-			console.log('Reloading data for tab:', sidebarTab);
 			if (sidebarTab === 'trips') loadTrips();
 			if (sidebarTab === 'history') loadCommunications();
 		}
 	});
 
+	// ──────────────────────────────────────────────
+	// Google Maps helpers
+	// ──────────────────────────────────────────────
+
+	/**
+	 * Builds a vehicle SVG icon.
+	 * @param {boolean} isOnline
+	 * @param {number} [rotation=0]
+	 * @returns {google.maps.Symbol}
+	 */
+	function getVehicleIcon(isOnline, rotation = 0) {
+		return {
+			path: 'M0,-15 L10,15 L0,10 L-10,15 Z',
+			fillColor: isOnline ? '#22c55e' : '#64748b',
+			fillOpacity: 1,
+			strokeColor: '#FFFFFF',
+			strokeWeight: 2,
+			scale: 1.5,
+			rotation,
+			anchor: /** @type {any} */ (new /** @type {any} */ (window).google.maps.Point(0, 0))
+		};
+	}
+
+	/** Remove all vehicle markers from the map. */
+	function clearAllMarkers() {
+		vehicleMarkers.forEach((m) => m.setMap(null));
+		vehicleMarkers.clear();
+	}
+
+	/**
+	 * Add or update a vehicle marker on the map.
+	 * @param {{ device_id: string; latitude: number; longitude: number; bearing?: number; online?: boolean }} data
+	 */
+	function upsertVehicleMarker(data) {
+		if (!map || !googleRef) return;
+
+		const position = { lat: data.latitude, lng: data.longitude };
+		const icon = getVehicleIcon(data.online ?? true, data.bearing ?? 0);
+
+		if (vehicleMarkers.has(data.device_id)) {
+			const marker = vehicleMarkers.get(data.device_id);
+			marker?.setPosition(position);
+			marker?.setIcon(icon);
+		} else {
+			const marker = new googleRef.maps.Marker({
+				position,
+				map,
+				icon,
+				title: data.device_id
+			});
+			vehicleMarkers.set(data.device_id, marker);
+		}
+	}
+
 	async function initMap() {
 		try {
-			console.log('Initializing Map Engine...');
-			mapEngine = new GoogleMapEngine({
-				container: mapContainer,
+			mapInitialized = true;
+
+			const loader = new Loader({
 				apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-				theme: 'modern',
-				/** @param {any} vehicle */
-				infoWindowRenderer: (vehicle) => `
-					<div class="p-2 text-slate-800">
-						<h3 class="font-bold">${vehicle.device_id || 'Unknown'}</h3>
-						<p>Speed: ${vehicle.speed || 0} km/h</p>
-					</div>
-				`
+				version: 'weekly',
+				libraries: ['places', 'geometry', 'marker']
 			});
 
-			const mapInstance = await mapEngine.mount(mapContainer);
-			console.log('Map Engine Mounted');
+			await loader.load();
+			googleRef = /** @type {any} */ (window).google;
 
-			// Start Live Motion Loop
-			mapEngine.startLive();
+			map = new googleRef.maps.Map(mapContainer, {
+				center: { lat: 20.6597, lng: -103.3496 }, // Guadalajara default
+				zoom: 12,
+				mapTypeId: 'roadmap',
+				disableDefaultUI: false,
+				zoomControl: true,
+				streetViewControl: false,
+				fullscreenControl: true,
+				styles: [
+					{ elementType: 'geometry', stylers: [{ color: '#1d2535' }] },
+					{ elementType: 'labels.text.stroke', stylers: [{ color: '#1d2535' }] },
+					{ elementType: 'labels.text.fill', stylers: [{ color: '#8a9bb0' }] },
+					{
+						featureType: 'administrative.locality',
+						elementType: 'labels.text.fill',
+						stylers: [{ color: '#d4e0f0' }]
+					},
+					{ featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2d3f5a' }] },
+					{
+						featureType: 'road',
+						elementType: 'geometry.stroke',
+						stylers: [{ color: '#1a2a40' }]
+					},
+					{
+						featureType: 'road',
+						elementType: 'labels.text.fill',
+						stylers: [{ color: '#9ca5b3' }]
+					},
+					{
+						featureType: 'road.highway',
+						elementType: 'geometry',
+						stylers: [{ color: '#3a5a7a' }]
+					},
+					{
+						featureType: 'water',
+						elementType: 'geometry',
+						stylers: [{ color: '#0e1626' }]
+					},
+					{
+						featureType: 'water',
+						elementType: 'labels.text.fill',
+						stylers: [{ color: '#515c6d' }]
+					}
+				]
+			});
 
-			// Initialize Trip Replay Controller
-			// v0.1.4 requires (map, google)
-			// @ts-ignore
-			tripReplay = new TripReplayController(mapInstance, window.google);
-
-			// If we already have a selected device, load it
 			if (selectedDeviceId && activeTab === 'communications') {
 				loadDeviceDataAndConnectStream(selectedDeviceId);
 			}
 		} catch (e) {
-			console.error('Failed to initialize map:', e);
+			console.error('Failed to initialize Google Maps:', e);
+			mapInitialized = false;
 		}
 	}
+
+	// ──────────────────────────────────────────────
+	// Stream / live data
+	// ──────────────────────────────────────────────
 
 	function cleanupStream() {
 		if (socket) {
 			socket.close();
 			socket = null;
 		}
-		// If needed, remove marker from mapEngine?
-		// mapEngine?.removeMarker(selectedDeviceId);
-	}
-
-	// Initialize Map when container is available and engine not yet created
-	$effect(() => {
-		if (mapContainer && !mapEngine) {
-			initMap();
-		}
-	});
-
-	/** @param {boolean} isOnline */
-	function getVehicleIcon(isOnline) {
-		const color = isOnline ? '#22c55e' : '#64748b'; // Green-500 : Slate-500
-		return {
-			path: 'M0,-15 L10,15 L0,10 L-10,15 Z', // Sharper arrow
-			fillColor: color,
-			fillOpacity: 1,
-			strokeColor: '#FFFFFF',
-			strokeWeight: 2,
-			scale: 1.5,
-			rotation: 0, // Engine handles rotation if bearing is provided
-			anchor: { x: 0, y: 0 }
-		};
 	}
 
 	/** @param {string} deviceId */
 	async function loadDeviceDataAndConnectStream(deviceId) {
-		// 1. Cleanup previous stream
 		cleanupStream();
 
 		try {
-			// 2. Fetch latest position
-			/** @type {any} */
 			const data = await DevicesService.getLatestCommunication(deviceId);
+			if (!data) return;
 
-			if (!data) {
-				console.warn('No latest communication data found for device:', deviceId);
-				return;
-			}
-
-			// Update UI date/time
 			if (data.received_at) {
-				// Ensure we treat it as UTC if no info provided
 				let dateStr = data.received_at;
-				// check if has timezone info (Z or +00:00 style)
-				// simplistic check: if ends in digit, likely needs Z
-				if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?$/.test(dateStr)) {
-					dateStr += 'Z';
-				}
+				if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?$/.test(dateStr)) dateStr += 'Z';
 
 				const dateObj = new Date(dateStr);
-				// Set date input (YYYY-MM-DD) - Adjust to Mexico City
-				selectedDate = dateObj.toLocaleDateString('en-CA', {
-					timeZone: 'America/Mexico_City'
-				});
-				// Set time for display
+				selectedDate = dateObj.toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
 				lastCommunicationTime = dateObj.toLocaleTimeString('es-MX', {
 					hour: '2-digit',
 					minute: '2-digit',
@@ -360,116 +293,67 @@
 				});
 			}
 
-			if (mapEngine) {
-				// 3. Update Map
-				// Normalize data for map engine if needed.
-				const isOnline = true; // Logic to determine online status?
+			if (map) {
+				const lat = Number(data.latitude);
+				const lng = Number(data.longitude);
 
-				// Timestamp handling
-				let ts = Date.now();
-				if (data.received_at) {
-					ts = new Date(data.received_at).getTime();
-				}
+				upsertVehicleMarker({
+					device_id: deviceId,
+					latitude: lat,
+					longitude: lng,
+					bearing: Number(data.course || data.heading || 0),
+					online: true
+				});
 
-				// @ts-ignore
-				const vehicleData = {
-					...data,
-					id: deviceId, // Required by Map Engine
-					// Ensure types are correct
-					// @ts-ignore
-					latitude: Number(data.latitude),
-					// @ts-ignore
-					longitude: Number(data.longitude),
-					// @ts-ignore
-					lat: Number(data.latitude),
-					// @ts-ignore
-					lng: Number(data.longitude),
-					// @ts-ignore
-					speedKmh: Number(data.speed || 0), // Engine prefers speedKmh
-					// @ts-ignore
-					bearing: Number(data.course || data.heading || 0), // Engine prefers bearing
-					timestamp: ts, // Engine requires number (epoch)
-					online: isOnline,
-					icon: getVehicleIcon(isOnline)
-				};
+				map.setCenter({ lat, lng });
+				map.setZoom(15);
 
-				console.log('Adding vehicle marker:', vehicleData);
-				mapEngine.clearAllMarkers();
-				mapEngine.addVehicleMarker(vehicleData);
-
-				// Center map
-				// @ts-ignore
-				if (typeof mapEngine.setCenter === 'function') {
-					mapEngine.setCenter(vehicleData.latitude, vehicleData.longitude);
-				} else {
-					console.warn('mapEngine.setCenter is not a function');
-				}
-
-				// 4. Connect WebSocket ONLY if we successfully loaded data
+				// Connect WebSocket for live updates
 				const streamUrl = DevicesService.getStreamUrl(deviceId);
-				console.log('Connecting to stream:', streamUrl);
-
 				socket = new WebSocket(streamUrl);
 
-				socket.onopen = () => {
-					console.log('✅ WebSocket Connected');
-				};
+				socket.onopen = () => console.log('[nexus] WebSocket connected');
 
-				socket.onmessage = (/** @type {MessageEvent} */ event) => {
+				socket.onmessage = (/** @type {MessageEvent<string>} */ event) => {
 					try {
 						const message = JSON.parse(event.data);
-						if (message.event === 'message' && message.data && message.data.data) {
-							// The user documentation says:
-							// message.data = { data: { DEVICE_ID, LATITUD, LONGITUD, SPEED }, decoded: {}, metadata: {} }
-							// So valid update is in message.data.data
-							const rawUpdate = message.data.data;
+						if (message.event === 'message' && message.data?.data) {
+							const raw = message.data.data;
+							const lat = Number(raw.LATITUD);
+							const lng = Number(raw.LONGITUD);
 
-							const update = {
-								id: rawUpdate.DEVICE_ID || deviceId, // Required by Map Engine
-								device_id: rawUpdate.DEVICE_ID || deviceId,
-								latitude: Number(rawUpdate.LATITUD),
-								longitude: Number(rawUpdate.LONGITUD),
-								lat: Number(rawUpdate.LATITUD),
-								lng: Number(rawUpdate.LONGITUD),
-								speed: Number(rawUpdate.SPEED),
-								speedKmh: Number(rawUpdate.SPEED), // Engine preferred
-								bearing: Number(rawUpdate.COURSE || rawUpdate.HEADING || 0), // Try to get bearing if available
-								timestamp: Date.now(), // Assume now for live stream
-								online: true,
-								icon: getVehicleIcon(true)
-							};
-
-							// Update marker
-							if (mapEngine && !isNaN(update.latitude) && !isNaN(update.longitude)) {
-								mapEngine.updateVehicleMarker(update);
+							if (!isNaN(lat) && !isNaN(lng)) {
+								upsertVehicleMarker({
+									device_id: raw.DEVICE_ID || deviceId,
+									latitude: lat,
+									longitude: lng,
+									bearing: Number(raw.COURSE || raw.HEADING || 0),
+									online: true
+								});
 							}
-						} else if (message.event === 'ping') {
-							// console.log('💓 Ping'); // Optional keep-alive logging
 						}
 					} catch (err) {
-						console.error('Error parsing WebSocket message:', err);
+						console.error('[nexus] WS parse error', err);
 					}
 				};
 
-				socket.onerror = (error) => {
-					console.error('❌ WebSocket Error:', error);
-				};
-
-				socket.onclose = () => {
-					console.log('🔌 WebSocket Disconnected');
-				};
+				socket.onerror = (e) => console.error('[nexus] WebSocket error', e);
 			}
 		} catch (error) {
-			console.error('Error loading device data:', error);
+			console.error('[nexus] loadDeviceDataAndConnectStream error', error);
 		}
 	}
+
+	// ──────────────────────────────────────────────
+	// Data loaders
+	// ──────────────────────────────────────────────
 
 	async function loadDevices() {
 		isLoading = true;
 		try {
-			devices = /** @type {Device[]} */ (await DevicesService.getAll());
+			devices = await DevicesService.getAll();
 		} catch (error) {
-			console.error('Error loading devices:', error);
+			console.error(error);
 		} finally {
 			isLoading = false;
 		}
@@ -477,7 +361,6 @@
 
 	async function loadTrips() {
 		if (!selectedDeviceId || !selectedDate) return;
-
 		isLoadingTrips = true;
 		try {
 			const response = await TripsService.getTrips({
@@ -485,10 +368,9 @@
 				day: selectedDate,
 				tz: 'America/Mexico_City'
 			});
-			// @ts-ignore
 			trips = response.trips || [];
 		} catch (error) {
-			console.error('Error loading trips:', error);
+			console.error(error);
 			trips = [];
 		} finally {
 			isLoadingTrips = false;
@@ -497,7 +379,6 @@
 
 	async function loadCommunications() {
 		if (!selectedDeviceId || !selectedDate) return;
-
 		isLoadingCommunications = true;
 		try {
 			const response = await DevicesService.getCommunications(
@@ -507,14 +388,36 @@
 			);
 			communications = response || [];
 		} catch (error) {
-			console.error('Error loading communications:', error);
+			console.error(error);
 			communications = [];
 		} finally {
 			isLoadingCommunications = false;
 		}
 	}
 
-	// Filter devices based on search term
+	// ──────────────────────────────────────────────
+	// Resize
+	// ──────────────────────────────────────────────
+
+	function startResize() {
+		isDragging = true;
+	}
+
+	/** @param {MouseEvent} event */
+	function handleResize(event) {
+		if (!isDragging) return;
+		const newWidth = event.clientX - 64;
+		if (newWidth > 200 && newWidth < 1200) sidebarWidth = newWidth;
+	}
+
+	function stopResize() {
+		isDragging = false;
+	}
+
+	// ──────────────────────────────────────────────
+	// Derived
+	// ──────────────────────────────────────────────
+
 	let filteredDevices = $derived(
 		devices.filter((device) => {
 			const term = searchTerm.toLowerCase();
@@ -526,275 +429,60 @@
 			);
 		})
 	);
-
-	/** @param {Device} device */
-	function handleRowClick(device) {
-		if (isAssignmentMode) {
-			if (device.status === 'nuevo' && device.device_id) {
-				toggleDeviceSelection(device.device_id);
-			}
-			return;
-		}
-
-		if (selectedDeviceId === device.device_id) {
-			selectedDeviceId = null; // Deselect if already selected
-		} else {
-			selectedDeviceId = device.device_id || '';
-		}
-	}
-
-	/** @param {Trip} trip */
-	async function selectTrip(trip) {
-		if (selectedTripId === trip.trip_id) return;
-		selectedTripId = trip.trip_id || null;
-		isPlaying = false;
-		isPaused = false;
-
-		// Stop any existing replay
-		if (tripReplay) tripReplay.stop();
-
-		try {
-			// Fetch full trip details
-			const tripDetails = await TripsService.getTripById(trip.trip_id, {
-				include_alerts: true,
-				include_points: true
-			});
-
-			if (tripDetails && tripReplay) {
-				// @ts-ignore
-				const points = (tripDetails.points || []).map((/** @type {any} */ p) => ({
-					lat: p.lat,
-					lng: p.lon, // Engine uses lng
-					ts: new Date(p.timestamp).getTime(), // Changed: Engine expects 'ts' (epoch) instead of 'timestamp'
-					speed: p.speed,
-					course: p.heading, // bearing in engine usually
-					itemType: 'status'
-				}));
-
-				// @ts-ignore
-				const alerts = (tripDetails.alerts || []).map((/** @type {any} */ a) => ({
-					lat: a.lat,
-					lng: a.lon, // Engine uses lng
-					ts: new Date(a.timestamp).getTime(), // Changed: Engine expects 'ts' (epoch) instead of 'timestamp'
-					itemType: 'alert',
-					type: a.type
-				}));
-
-				const replayPoints = [...points, ...alerts].sort((a, b) => a.ts - b.ts);
-
-				// Load into engine
-				// v0.1.4: load(coordinates[])
-				tripReplay.load(replayPoints);
-			}
-		} catch (error) {
-			console.error('Error loading trip details:', error);
-		}
-	}
-
-	async function togglePlay() {
-		if (!tripReplay) return;
-
-		if (isPlaying && !isPaused) {
-			// Pause
-			tripReplay.pause();
-			isPaused = true;
-		} else if (isPaused) {
-			// Resume
-			tripReplay.resume();
-			isPaused = false;
-			isPlaying = true;
-		} else {
-			// Start Play
-			isPlaying = true;
-			isPaused = false;
-			try {
-				await tripReplay.play({ duration: 10000 });
-				// Only reset if we finished naturally (not stopped/paused via other means if the promise rejects or resolves early)
-				// Assuming promise resolves on completion.
-				if (isPlaying && !isPaused) {
-					isPlaying = false;
-					isPaused = false;
-				}
-			} catch (e) {
-				console.error('Replay error or interrupted:', e);
-				// If interrupted, we might want to keep state or reset depending on error.
-				// For now, let's assume valid completion or explicit stop handle state.
-			}
-		}
-	}
-
-	function stopReplay() {
-		if (!tripReplay) return;
-		tripReplay.stop();
-		isPlaying = false;
-		isPaused = false;
-	}
 </script>
 
-<div class="flex flex-col h-screen overflow-hidden bg-slate-50">
-	<Topbar title="Nexus / Dispositivos" backUrl="/products/nexus">
-		<a href="/products/nexus/devices/create">
-			<Button variant="primary" size="sm">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					class="mr-2"><path d="M5 12h14" /><path d="M12 5v14" /></svg
-				>
-				Nuevo Dispositivo
-			</Button>
-		</a>
-		<Button
-			variant={isAssignmentMode ? 'secondary' : 'outline'}
-			size="sm"
-			class="ml-2"
-			onclick={toggleAssignmentMode}
-		>
-			{isAssignmentMode ? 'Cancelar Asignación' : 'Asignar Dispositivos'}
-		</Button>
-	</Topbar>
+<div class="flex h-screen flex-col overflow-hidden bg-app text-app">
+	<Topbar title="Nexus / Dispositivos" backUrl="/products/nexus" />
 
-	<div class="flex flex-col flex-1 overflow-hidden">
-		<!-- Top Panel: Device List -->
-		<div class="h-[40%] flex flex-col border-b border-slate-200 bg-white">
-			<div class="p-4 border-b border-slate-100 flex justify-between items-center bg-white z-10">
+	<div class="flex flex-1 flex-col overflow-hidden">
+		<!-- Device list (top 40%) -->
+		<div
+			class="flex h-[40%] flex-col"
+			style="border-bottom: 1px solid var(--color-border); background: var(--color-bg-secondary)"
+		>
+			<div
+				class="z-10 flex items-center justify-between p-4"
+				style="border-bottom: 1px solid var(--color-border); background: var(--color-bg-secondary)"
+			>
 				<div class="w-full md:w-1/2">
-					<Input
-						placeholder="Buscar por ID, Marca, Modelo..."
-						bind:value={searchTerm}
-						class="w-full"
-					/>
+					<Input placeholder="Buscar..." bind:value={searchTerm} />
 				</div>
+
 				<Button variant="ghost" size="sm" onclick={loadDevices} disabled={isLoading} class="ml-2">
 					Actualizar
 				</Button>
 			</div>
 
 			<div class="flex-1 overflow-y-auto">
-				<table class="w-full text-sm text-left">
-					<thead
-						class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 sticky top-0"
-					>
+				<table class="gac-table">
+					<thead class="sticky top-0">
 						<tr>
-							{#if isAssignmentMode}
-								<th class="px-6 py-2 w-10">
-									<input
-										type="checkbox"
-										class="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-										checked={filteredDevices.filter((d) => d.status === 'nuevo').length > 0 &&
-											selectedDevicesForAssignment.length ===
-												filteredDevices.filter((d) => d.status === 'nuevo').length}
-										onclick={(e) => {
-											e.stopPropagation();
-											selectAllNewDevices();
-										}}
-										disabled={filteredDevices.filter((d) => d.status === 'nuevo').length === 0}
-									/>
-								</th>
-							{/if}
-							<th class="px-6 py-2">ID Dispositivo</th>
-							<th class="px-6 py-2">ICCID</th>
-							<th class="px-6 py-2">Marca / Modelo</th>
-							<th class="px-6 py-2">Estatus</th>
-							<th class="px-6 py-2">Cliente</th>
-							<th class="px-6 py-2">Última Com.</th>
-							<th class="px-6 py-2 text-right">Acciones</th>
+							<th>ID</th>
+							<th>Marca</th>
+							<th>Estatus</th>
+							<th>Última</th>
 						</tr>
 					</thead>
-					<tbody class="divide-y divide-slate-100">
+					<tbody>
 						{#if isLoading}
 							<tr>
-								<td colspan={isAssignmentMode ? 8 : 7} class="px-6 py-8 text-center text-slate-500">
-									Cargando dispositivos...
-								</td>
+								<td colspan="4" class="px-6 py-8 text-center text-app-muted">Cargando...</td>
 							</tr>
 						{:else if filteredDevices.length === 0}
 							<tr>
-								<td colspan="7" class="px-6 py-8 text-center text-slate-500">
-									No se encontraron dispositivos.
-								</td>
+								<td colspan="4" class="px-6 py-8 text-center text-app-muted"> Sin dispositivos </td>
 							</tr>
 						{:else}
-							{#each filteredDevices as device (device.device_id)}
+							{#each filteredDevices as device}
 								<tr
-									class="transition-colors cursor-pointer {selectedDeviceId === device.device_id
-										? 'bg-blue-50/50'
-										: 'hover:bg-slate-50'}"
-									onclick={() => handleRowClick(device)}
+									class="cursor-pointer"
+									class:bg-white={selectedDeviceId === device.device_id}
+									onclick={() => (selectedDeviceId = device.device_id)}
 								>
-									{#if isAssignmentMode}
-										<td class="px-6 py-2 text-center" onclick={(e) => e.stopPropagation()}>
-											<input
-												type="checkbox"
-												class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
-												checked={!!device.device_id &&
-													selectedDevicesForAssignment.includes(device.device_id)}
-												disabled={device.status !== 'nuevo'}
-												onclick={() =>
-													device.status === 'nuevo' &&
-													device.device_id &&
-													toggleDeviceSelection(device.device_id)}
-											/>
-										</td>
-									{/if}
-									<td class="px-6 py-2 font-medium text-slate-900">
-										{device.device_id}
-									</td>
-									<td class="px-6 py-2 text-slate-600 font-mono text-xs">
-										{device.iccid || '-'}
-									</td>
-									<td class="px-6 py-2 text-slate-600">
-										<div class="text-slate-900">
-											{device.brand}
-										</div>
-										<div class="text-xs text-slate-500">
-											{device.model}
-										</div>
-									</td>
-									<td class="px-6 py-2">
-										<span
-											class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-											class:bg-blue-100={device.status === 'nuevo'}
-											class:text-blue-800={device.status === 'nuevo'}
-											class:bg-yellow-100={device.status === 'preparado'}
-											class:text-yellow-800={device.status === 'preparado'}
-											class:bg-purple-100={device.status === 'enviado'}
-											class:text-purple-800={device.status === 'enviado'}
-											class:bg-green-100={device.status === 'entregado'}
-											class:text-green-800={device.status === 'entregado'}
-											class:bg-emerald-100={device.status === 'asignado'}
-											class:text-emerald-800={device.status === 'asignado'}
-											class:bg-orange-100={device.status === 'devuelto'}
-											class:text-orange-800={device.status === 'devuelto'}
-											class:bg-red-100={device.status === 'inactivo'}
-											class:text-red-800={device.status === 'inactivo'}
-										>
-											{device.status}
-										</span>
-									</td>
-									<td class="px-6 py-2 text-slate-600">
-										{device.client_id ? 'Asignado' : '-'}
-									</td>
-									<td class="px-6 py-2 text-slate-600">
-										{device.last_comm_at ? new Date(device.last_comm_at).toLocaleString() : '-'}
-									</td>
-									<td class="px-6 py-2 text-right"> </td><td class="px-6 py-2 text-right">
-										<Button
-											variant="ghost"
-											size="sm"
-											onclick={async () => {
-												await goto(`/products/nexus/devices/${device.device_id}`);
-											}}
-										>
-											Detalles
-										</Button>
-									</td>
+									<td>{device.device_id}</td>
+									<td>{device.brand}</td>
+									<td>{device.status}</td>
+									<td>{device.last_comm_at}</td>
 								</tr>
 							{/each}
 						{/if}
@@ -803,429 +491,151 @@
 			</div>
 		</div>
 
-		<!-- Bottom Panel: Tabs & Content -->
-		<div class="flex-1 flex flex-col bg-slate-50">
-			{#if isAssignmentMode}
-				<div class="flex-1 overflow-hidden bg-white">
-					<AssignmentPanel
-						selectedDevices={selectedDevicesForAssignment}
-						onClose={() => toggleAssignmentMode()}
-						onSuccess={async () => {
-							await loadDevices();
-							toggleAssignmentMode();
-						}}
-					/>
-				</div>
-			{:else if !selectedDeviceId}
-				<div class="flex flex-col items-center justify-center h-full text-slate-400">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="48"
-						height="48"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="1"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						class="mb-4 text-slate-300"
-					>
-						<rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect>
-						<line x1="12" y1="2" x2="12" y2="22"></line>
-						<line x1="2" y1="12" x2="22" y2="12"></line>
-					</svg>
-					<p class="text-lg font-medium">Seleccione un dispositivo</p>
-					<p class="text-sm">
-						Seleccione un dispositivo de la lista de arriba para ver más opciones.
-					</p>
-				</div>
-			{:else}
-				<!-- Tabs Header -->
-				<div class="flex border-b border-slate-200 bg-slate-100 border-t-4 border-slate-200/50">
-					<button
-						class="flex-1 px-4 py-3 text-sm font-bold transition-all duration-200 {activeTab ===
-						'commands'
-							? 'bg-white text-blue-600 shadow-[inset_0_2px_0_0_#3b82f6]'
-							: 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200 shadow-[inset_0_2px_0_0_transparent]'}"
-						onclick={() => (activeTab = 'commands')}
-					>
-						Comandos
-					</button>
-					<button
-						class="flex-1 px-4 py-3 text-sm font-bold transition-all duration-200 border-l border-slate-200 {activeTab ===
-						'communications'
-							? 'bg-white text-blue-600 shadow-[inset_0_2px_0_0_#3b82f6]'
-							: 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200 shadow-[inset_0_2px_0_0_transparent]'}"
-						onclick={() => (activeTab = 'communications')}
-					>
-						Comunicaciones
-					</button>
+		<!-- Bottom split: sidebar + map -->
+		<div class="flex flex-1 overflow-hidden">
+			<!-- Sidebar -->
+			<div
+				class="flex flex-col"
+				style="width: {sidebarWidth}px; background: var(--color-bg-secondary); border-right: 1px solid var(--color-border)"
+			>
+				<!-- Tabs -->
+				<div
+					class="flex shrink-0 gap-1 border-b px-4 pt-3"
+					style="border-color: var(--color-border)"
+				>
+					{#each [['commands', 'Comandos'], ['communications', 'En vivo'], ['assignment', 'Asignación']] as [tab, label]}
+						<button
+							class="rounded-t px-3 py-1.5 text-sm transition-colors"
+							style={activeTab === tab
+								? 'background: var(--color-bg-primary); color: var(--color-accent-primary); border-bottom: 2px solid var(--color-accent-primary);'
+								: 'color: var(--color-text-muted)'}
+							onclick={() => (activeTab = tab)}
+						>
+							{label}
+						</button>
+					{/each}
 				</div>
 
-				<!-- Tabs Content (Persistent) -->
-				<div class="flex-1 overflow-hidden relative">
-					<!-- Commands -->
-					<div
-						class="h-full w-full absolute inset-0 {activeTab === 'commands'
-							? 'z-10'
-							: 'z-0 invisible'} bg-slate-50"
-					>
-						<div class="h-full overflow-y-auto p-4">
-							<CommandPanel deviceId={selectedDeviceId} />
-						</div>
+				{#if activeTab === 'commands'}
+					<div class="flex-1 overflow-auto p-4">
+						<CommandPanel deviceId={selectedDeviceId} />
+					</div>
+				{:else if activeTab === 'assignment'}
+					<div class="flex-1 overflow-auto p-4">
+						<AssignmentPanel bind:selectedDevices={selectedDevicesForAssignment} />
+					</div>
+				{:else}
+					<!-- Communications / live tab -->
+					<div class="shrink-0 p-4">
+						<input type="date" class="gac-input w-full" bind:value={selectedDate} />
+
+						{#if lastCommunicationTime}
+							<p class="mt-1 text-xs" style="color: var(--color-text-muted)">
+								Última: {lastCommunicationTime}
+							</p>
+						{/if}
 					</div>
 
-					<!-- Communications / Map -->
-					<div
-						class="h-full w-full absolute inset-0 {activeTab === 'communications'
-							? 'z-10'
-							: 'z-0 invisible'} bg-slate-100 flex overflow-hidden"
-					>
-						<!-- Resizable Sidebar -->
-						<div
-							class="bg-white border-r border-slate-200 flex flex-col z-20 shadow-md transition-none"
-							style="width: {sidebarWidth}px; min-width: 20%;"
-						>
-							<!-- Date & Time (Top Fixed) -->
-							<div class="p-4 border-b border-slate-100">
-								<div class="flex flex-col space-y-2">
-									<div class="flex items-center justify-between">
-										<span class="text-xs font-medium text-slate-500 uppercase tracking-wider"
-											>Fecha</span
-										>
-										{#if lastCommunicationTime}
-											<div
-												class="flex items-center text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100"
-											>
-												<svg
-													xmlns="http://www.w3.org/2000/svg"
-													width="12"
-													height="12"
-													viewBox="0 0 24 24"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2.5"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													class="mr-1.5"
-													><circle cx="12" cy="12" r="10"></circle><polyline
-														points="12 6 12 12 16 14"
-													></polyline></svg
-												>
-												{lastCommunicationTime}
-											</div>
-										{/if}
-									</div>
-									<input
-										type="date"
-										class="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-										bind:value={selectedDate}
-									/>
-								</div>
+					<!-- Sub-tabs: trips / history -->
+					<div class="flex shrink-0 gap-1 border-b px-4" style="border-color: var(--color-border)">
+						{#each [['trips', 'Trayectos'], ['history', 'Historial']] as [tab, label]}
+							<button
+								class="rounded-t px-3 py-1 text-xs transition-colors"
+								style={sidebarTab === tab
+									? 'color: var(--color-accent-primary); border-bottom: 2px solid var(--color-accent-primary);'
+									: 'color: var(--color-text-muted)'}
+								onclick={() => (sidebarTab = tab)}
+							>
+								{label}
+							</button>
+						{/each}
+					</div>
 
-								<!-- Internal Sidebar Tabs -->
-								<div class="flex mt-4 border border-slate-200 rounded-lg p-1 bg-slate-50">
+					<div class="flex-1 overflow-auto p-4">
+						{#if sidebarTab === 'trips'}
+							{#if isLoadingTrips}
+								<p class="text-xs" style="color: var(--color-text-muted)">Cargando trayectos...</p>
+							{:else if trips.length === 0}
+								<p class="text-xs" style="color: var(--color-text-muted)">
+									Sin trayectos para esta fecha
+								</p>
+							{:else}
+								{#each trips as trip}
 									<button
-										class="flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all {sidebarTab ===
-										'trips'
-											? 'bg-white text-slate-900 shadow-sm'
-											: 'text-slate-500 hover:text-slate-700'}"
-										onclick={() => (sidebarTab = 'trips')}
+										class="mb-2 w-full rounded-lg p-3 text-left gac-panel-solid"
+										onclick={() => (selectedTripId = trip.trip_id)}
 									>
-										Trayectos
+										<span class="text-sm">{trip.trip_id}</span>
 									</button>
-									<button
-										class="flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all {sidebarTab ===
-										'history'
-											? 'bg-white text-slate-900 shadow-sm'
-											: 'text-slate-500 hover:text-slate-700'}"
-										onclick={() => (sidebarTab = 'history')}
-									>
-										Histórico
-									</button>
-								</div>
-							</div>
-
-							<!-- Sidebar Content (Scrollable Container Wrapper) -->
-							<div class="flex-1 overflow-hidden flex flex-col relative">
-								{#if sidebarTab === 'trips'}
-									<!-- Fixed Controls Header -->
-									{#if selectedTripId}
-										<div class="shrink-0 p-3 bg-slate-50 border-b border-slate-200 z-10">
-											<div
-												class="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-200 shadow-sm"
-											>
-												<p class="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">
-													Controles
-												</p>
-												<div class="flex items-center space-x-2">
-													<button
-														class="flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 {isPlaying &&
-														!isPaused
-															? 'bg-amber-100 text-amber-600 hover:bg-amber-200'
-															: 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200'}"
-														onclick={togglePlay}
-														title={isPlaying && !isPaused ? 'Pausar' : 'Reproducir'}
-													>
-														{#if isPlaying && !isPaused}
-															<svg
-																xmlns="http://www.w3.org/2000/svg"
-																width="14"
-																height="14"
-																viewBox="0 0 24 24"
-																fill="none"
-																stroke="currentColor"
-																stroke-width="2.5"
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																><rect x="6" y="4" width="4" height="16"></rect><rect
-																	x="14"
-																	y="4"
-																	width="4"
-																	height="16"
-																></rect></svg
-															>
-														{:else}
-															<svg
-																xmlns="http://www.w3.org/2000/svg"
-																width="14"
-																height="14"
-																viewBox="0 0 24 24"
-																fill="none"
-																stroke="currentColor"
-																stroke-width="2.5"
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																class="ml-0.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg
-															>
-														{/if}
-													</button>
-
-													<button
-														class="flex items-center justify-center w-8 h-8 rounded-full bg-white text-slate-500 border border-slate-200 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-red-500"
-														onclick={stopReplay}
-														title="Detener"
-													>
-														<svg
-															xmlns="http://www.w3.org/2000/svg"
-															width="14"
-															height="14"
-															viewBox="0 0 24 24"
-															fill="none"
-															stroke="currentColor"
-															stroke-width="2.5"
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg
-														>
-													</button>
-												</div>
-											</div>
-										</div>
-									{/if}
-
-									<div class="flex-1 overflow-y-auto p-4">
-										{#if isLoadingTrips}
-											<div class="flex items-center justify-center py-8 text-slate-400">
-												<span class="loading loading-spinner loading-sm mr-2"></span> Cargando trayectos...
-											</div>
-										{:else if trips.length === 0}
-											<div class="text-center py-8 text-slate-400 text-sm">
-												No hay trayectos para esta fecha.
-											</div>
-										{:else}
-											<div class="space-y-3">
-												{#each trips as trip (trip.trip_id)}
-													<button
-														class="bg-white border rounded-lg p-3 cursor-pointer transition-colors shadow-sm w-full text-left {selectedTripId ===
-														trip.trip_id
-															? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50/20'
-															: 'border-slate-200 hover:border-blue-400'}"
-														onclick={() => selectTrip(trip)}
-													>
-														<div class="flex justify-between items-start mb-2">
-															<div class="flex items-center text-xs font-semibold text-slate-700">
-																<div class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2"></div>
-																{new Date(trip.start_timestamp).toLocaleTimeString('es-MX', {
-																	hour: '2-digit',
-																	minute: '2-digit',
-																	second: '2-digit',
-																	hour12: false
-																})}
-															</div>
-															<div class="flex items-center text-xs font-semibold text-slate-700">
-																{new Date(trip.end_timestamp).toLocaleTimeString('es-MX', {
-																	hour: '2-digit',
-																	minute: '2-digit',
-																	second: '2-digit',
-																	hour12: false
-																})}
-																<div class="w-1.5 h-1.5 rounded-full bg-slate-300 ml-2"></div>
-															</div>
-														</div>
-
-														<div
-															class="flex justify-between text-xs text-slate-500 border-t border-slate-50 pt-2 mt-2"
-														>
-															<span>{(trip.distance_km || 0).toFixed(1)} km</span>
-															<span>{Math.round(trip.duration_minutes || 0)} min</span>
-														</div>
-													</button>
+								{/each}
+							{/if}
+						{:else}
+							<!-- History table -->
+							{#if isLoadingCommunications}
+								<p class="text-xs" style="color: var(--color-text-muted)">Cargando historial...</p>
+							{:else if communications.length === 0}
+								<p class="text-xs" style="color: var(--color-text-muted)">
+									Sin registros para esta fecha
+								</p>
+							{:else}
+								<div class="overflow-x-auto">
+									<table class="gac-table text-xs">
+										<thead>
+											<tr>
+												{#each allColumns.filter((c) => !hiddenColumns.has(c)) as col}
+													<th>{col}</th>
 												{/each}
-											</div>
-										{/if}
-									</div>
-								{:else if sidebarTab === 'history'}
-									<div class="flex-1 flex flex-col overflow-hidden p-4 relative">
-										{#if isLoadingCommunications}
-											<div class="flex items-center justify-center py-8 text-slate-400">
-												<span class="loading loading-spinner loading-sm mr-2"></span> Cargando histórico...
-											</div>
-										{:else if communications.length === 0}
-											<div class="text-center py-8 text-slate-400 text-sm">
-												sin comunicaciones en la fecha {selectedDate}
-											</div>
-										{:else}
-											<!-- Column Toggles (Dropdown) -->
-											<div class="mb-4 shrink-0 relative z-20">
-												<button
-													class="flex items-center text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide hover:text-blue-600 transition-colors"
-													onclick={() => (showColumnSelector = !showColumnSelector)}
-												>
-													<svg
-														xmlns="http://www.w3.org/2000/svg"
-														width="14"
-														height="14"
-														viewBox="0 0 24 24"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="2"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														class="mr-1 transition-transform {showColumnSelector
-															? 'rotate-90'
-															: ''}"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg
-													>
-													Columnas Visibles
-												</button>
-
-												{#if showColumnSelector}
-													<div
-														class="absolute top-6 left-0 bg-white p-3 rounded-md border border-slate-200 shadow-xl z-50 w-64 max-h-60 overflow-y-auto"
-													>
-														<div class="flex flex-col gap-2">
-															{#each allColumns as col (col)}
-																<label
-																	class="inline-flex items-center space-x-2 cursor-pointer hover:bg-slate-50 p-1 rounded"
-																>
-																	<input
-																		type="checkbox"
-																		checked={!hiddenColumns.has(col)}
-																		onchange={() => toggleColumn(col)}
-																		class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5"
-																	/>
-																	<span class="text-xs text-slate-700 font-medium uppercase"
-																		>{col}</span
-																	>
-																</label>
-															{/each}
-														</div>
-													</div>
-												{/if}
-											</div>
-
-											<!-- Communications Table -->
-											{@const visibleColumns = allColumns.filter((c) => !hiddenColumns.has(c))}
-											<div class="flex-1 overflow-auto border rounded border-slate-200 min-h-0">
-												<table class="w-full text-xs text-left">
-													<thead
-														class="text-slate-500 border-b border-slate-200 bg-slate-50 sticky top-0 z-10 shadow-sm"
-													>
-														<tr>
-															{#each visibleColumns as key (key)}
-																<th
-																	class="px-2 py-2 font-medium whitespace-nowrap uppercase bg-slate-50 border-r border-slate-100 last:border-0"
-																	>{key}</th
-																>
-															{/each}
-														</tr>
-													</thead>
-													<tbody class="divide-y divide-slate-100">
-														{#each communications as comm, i (comm.uuid || i)}
-															<tr
-																class="transition-colors {i % 2 === 0
-																	? 'bg-slate-50/50'
-																	: 'bg-white'} hover:bg-blue-50"
-															>
-																{#each visibleColumns as key (key)}
-																	<td
-																		class="px-2 py-2 whitespace-nowrap text-slate-700 font-mono border-r border-slate-100 last:border-0"
-																	>
-																		{#if key === 'uuid'}
-																			<button
-																				class="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-																				title="Copiar UUID"
-																				onclick={(e) => {
-																					e.stopPropagation();
-																					if (navigator && navigator.clipboard) {
-																						navigator.clipboard.writeText(comm.uuid || '');
-																					}
-																				}}
-																			>
-																				<svg
-																					xmlns="http://www.w3.org/2000/svg"
-																					width="14"
-																					height="14"
-																					viewBox="0 0 24 24"
-																					fill="none"
-																					stroke="currentColor"
-																					stroke-width="2"
-																					stroke-linecap="round"
-																					stroke-linejoin="round"
-																					><rect x="9" y="9" width="13" height="13" rx="2" ry="2"
-																					></rect><path
-																						d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-																					></path></svg
-																				>
-																			</button>
-																		{:else}
-																			{/** @type {any} */ (comm)[key] ?? ''}
-																		{/if}
-																	</td>
-																{/each}
-															</tr>
-														{/each}
-													</tbody>
-												</table>
-											</div>
-										{/if}
-									</div>
-								{/if}
-							</div>
-						</div>
-
-						<!-- Drag Handle -->
-						<div
-							class="w-1 bg-slate-200 hover:bg-blue-400 cursor-col-resize z-30 transition-colors flex items-center justify-center focus:outline-none focus:bg-blue-500"
-							onmousedown={startResize}
-							role="slider"
-							tabindex="0"
-							aria-valuenow={sidebarWidth}
-							aria-valuemin="100"
-							aria-valuemax="1000"
-							onkeydown={(e) => {
-								if (e.key === 'ArrowLeft') sidebarWidth = Math.max(100, sidebarWidth - 10);
-								if (e.key === 'ArrowRight') sidebarWidth = Math.min(1000, sidebarWidth + 10);
-							}}
-						>
-							<div class="h-8 w-1 bg-slate-300 rounded-full"></div>
-						</div>
-
-						<!-- Map Container -->
-						<div class="flex-1 relative" bind:this={mapContainer}></div>
+											</tr>
+										</thead>
+										<tbody>
+											{#each communications as row}
+												<tr>
+													{#each allColumns.filter((c) => !hiddenColumns.has(c)) as col}
+														<td>{row[col] ?? ''}</td>
+													{/each}
+												</tr>
+											{/each}
+										</tbody>
+									</table>
+								</div>
+							{/if}
+						{/if}
 					</div>
-				</div>
-			{/if}
+				{/if}
+			</div>
+
+			<!-- Drag handle -->
+			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+			<div
+				class="w-1 cursor-col-resize transition-colors hover:bg-sky-400"
+				style="background: var(--color-border)"
+				onmousedown={startResize}
+				role="separator"
+				aria-orientation="vertical"
+				tabindex="-1"
+			></div>
+
+			<!-- Map -->
+			<div class="relative min-h-full flex-1" bind:this={mapContainer}>
+				{#if !mapInitialized}
+					<div
+						class="absolute inset-0 flex items-center justify-center"
+						style="background: var(--color-bg-primary)"
+					>
+						<p class="text-sm" style="color: var(--color-text-muted)">Cargando mapa...</p>
+					</div>
+				{/if}
+			</div>
 		</div>
 	</div>
 </div>
+
+<style>
+	:global(html),
+	:global(body),
+	:global(#app) {
+		height: 100%;
+		margin: 0;
+		padding: 0;
+	}
+</style>

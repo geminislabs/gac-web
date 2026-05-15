@@ -102,13 +102,17 @@
 	}
 </script>
 
-<div class="h-full flex flex-col bg-slate-50 border-t border-slate-200 font-sans">
+<div
+	class="flex h-full flex-col"
+	style="background: var(--color-bg-primary); border-top: 1px solid var(--color-border); font-family: var(--font-sans)"
+>
 	<div
-		class="px-6 py-4 border-b border-slate-200 bg-white flex justify-between items-center shadow-sm z-10"
+		class="z-10 flex items-center justify-between px-6 py-4"
+		style="background: var(--color-bg-secondary); border-bottom: 1px solid var(--color-border); box-shadow: var(--shadow-sm)"
 	>
 		<div>
-			<h3 class="font-bold text-slate-800 text-lg">Asignar Dispositivos</h3>
-			<p class="text-sm text-slate-500">
+			<h3 class="text-lg font-bold text-app">Asignar Dispositivos</h3>
+			<p class="text-sm text-app-muted">
 				{selectedDevices.length} dispositivos seleccionados para asignación
 			</p>
 		</div>
@@ -118,17 +122,22 @@
 	<div class="p-6 flex-1 overflow-y-auto">
 		{#if assigning || (progress > 0 && progress === total)}
 			<div
-				class="max-w-md mx-auto text-center space-y-6 py-10 animate-in fade-in slide-in-from-bottom-4 duration-500"
+				class="mx-auto max-w-md space-y-6 py-10 text-center animate-in fade-in slide-in-from-bottom-4 duration-500"
 			>
-				<div class="relative w-16 h-16 mx-auto">
+				<div class="relative mx-auto h-16 w-16">
 					{#if assigning}
-						<div class="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
 						<div
-							class="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"
+							class="absolute inset-0 rounded-full border-4"
+							style="border-color: var(--color-border)"
+						></div>
+						<div
+							class="absolute inset-0 animate-spin rounded-full border-4 border-t-transparent"
+							style="border-color: var(--color-accent); border-top-color: transparent"
 						></div>
 					{:else if failCount === 0}
 						<div
-							class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600"
+							class="mx-auto flex h-16 w-16 items-center justify-center rounded-full"
+							style="background: var(--color-success-bg); color: var(--color-success)"
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -144,7 +153,8 @@
 						</div>
 					{:else}
 						<div
-							class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto text-orange-600"
+							class="mx-auto flex h-16 w-16 items-center justify-center rounded-full"
+							style="background: var(--color-warning-bg); color: var(--color-warning)"
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -169,18 +179,23 @@
 					{/if}
 				</div>
 
-				<h4 class="text-xl font-semibold text-slate-800">
+				<h4 class="text-xl font-semibold text-app">
 					{assigning ? 'Asignando dispositivos...' : 'Proceso finalizado'}
 				</h4>
 
 				<div class="space-y-2">
-					<div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+					<div
+						class="h-2 w-full overflow-hidden rounded-full"
+						style="background: var(--color-bg-tertiary)"
+					>
 						<div
-							class="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
-							style="width: {(progress / total) * 100}%"
+							class="h-2 rounded-full transition-all duration-300 ease-out"
+							style="background: var(--color-accent); width: {(progress / total) * 100}%"
 						></div>
 					</div>
-					<div class="flex justify-between text-xs text-slate-500 font-medium font-mono">
+					<div
+						class="flex justify-between font-mono text-xs font-medium text-app-muted"
+					>
 						<span>0%</span>
 						<span>{((progress / total) * 100).toFixed(0)}%</span>
 						<span>100%</span>
@@ -188,17 +203,25 @@
 				</div>
 
 				{#if !assigning}
-					<div class="flex justify-center gap-6 mt-4">
+					<div class="mt-4 flex justify-center gap-6">
 						<div class="text-center">
-							<div class="text-2xl font-bold text-green-600">{successCount}</div>
-							<div class="text-xs text-slate-500 uppercase tracking-wide font-semibold">
+							<div class="text-2xl font-bold" style="color: var(--color-success)">
+								{successCount}
+							</div>
+							<div
+								class="text-xs font-semibold uppercase tracking-wide text-app-muted"
+							>
 								Exitosos
 							</div>
 						</div>
 						{#if failCount > 0}
 							<div class="text-center">
-								<div class="text-2xl font-bold text-red-600">{failCount}</div>
-								<div class="text-xs text-slate-500 uppercase tracking-wide font-semibold">
+								<div class="text-2xl font-bold" style="color: var(--color-danger)">
+									{failCount}
+								</div>
+								<div
+									class="text-xs font-semibold uppercase tracking-wide text-app-muted"
+								>
 									Fallidos
 								</div>
 							</div>
@@ -210,27 +233,29 @@
 				{/if}
 			</div>
 		{:else}
-			<div class="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 h-[500px]">
-				<!-- Column 1: Account Selection -->
-				<div
-					class="flex flex-col bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden h-full"
-				>
-					<div class="p-4 border-b border-slate-100 bg-slate-50/50">
+			<div class="mx-auto grid h-[500px] max-w-4xl grid-cols-1 gap-8 lg:grid-cols-2">
+				<div class="gac-panel-solid flex h-full flex-col overflow-hidden">
+					<div
+						class="p-4"
+						style="background: var(--color-bg-tertiary); border-bottom: 1px solid var(--color-border)"
+					>
 						<label
 							for="account-search"
-							class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block"
-							>1. Seleccionar Cliente</label
+							class="mb-2 block text-xs font-semibold uppercase tracking-wider text-app-muted"
 						>
+							1. Seleccionar Cliente
+						</label>
 						<div class="relative">
 							<input
 								id="account-search"
 								type="text"
 								bind:value={accountSearch}
 								placeholder="Buscar por nombre, email..."
-								class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-md text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-shadow"
+								class="gac-input w-full pl-9"
 							/>
 							<svg
-								class="absolute left-3 top-2.5 text-slate-400"
+								class="absolute left-3 top-2.5"
+								style="color: var(--color-text-muted)"
 								xmlns="http://www.w3.org/2000/svg"
 								width="16"
 								height="16"
@@ -245,19 +270,18 @@
 						</div>
 					</div>
 
-					<div
-						class="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-slate-200 hover:scrollbar-thumb-slate-300"
-					>
+					<div class="flex-1 overflow-y-auto p-2">
 						{#if loadingAccounts}
-							<div class="flex flex-col items-center justify-center h-40 space-y-3">
+							<div class="flex h-40 flex-col items-center justify-center space-y-3">
 								<div
-									class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"
+									class="h-6 w-6 animate-spin rounded-full border-2 border-t-transparent"
+									style="border-color: var(--color-accent); border-top-color: transparent"
 								></div>
-								<span class="text-xs text-slate-400 font-medium">Cargando clientes...</span>
+								<span class="text-xs font-medium text-app-muted">Cargando clientes...</span>
 							</div>
 						{:else if filteredAccounts.length === 0}
-							<div class="text-center py-10 px-4">
-								<p class="text-sm text-slate-500">
+							<div class="px-4 py-10 text-center">
+								<p class="text-sm text-app-muted">
 									No se encontraron cuentas que coincidan con "{accountSearch}".
 								</p>
 							</div>
@@ -265,25 +289,24 @@
 							<div class="space-y-1">
 								{#each filteredAccounts as account (account.id)}
 									<button
-										class="w-full text-left p-3 rounded-lg border transition-all duration-200 group relative
-                                        {selectedAccount === account.id
-											? 'bg-blue-50 border-blue-200 shadow-sm z-10 ring-1 ring-blue-200'
-											: 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'}"
+										class="group relative w-full rounded-lg p-3 text-left transition-all duration-200"
+										style={selectedAccount === account.id
+											? 'background: var(--color-accent-soft); border: 1px solid var(--color-accent); box-shadow: var(--shadow-sm)'
+											: 'background: transparent; border: 1px solid transparent'}
 										onclick={() => (selectedAccount = account.id)}
 									>
-										<div class="flex justify-between items-start">
+										<div class="flex items-start justify-between">
 											<div>
-												<div
-													class="font-medium text-slate-900 text-sm group-hover:text-blue-700 transition-colors"
-												>
-													{account.account_name}
-												</div>
-												<div class="text-xs text-slate-500 mt-0.5 font-mono">
+												<div class="text-sm font-medium text-app">{account.account_name}</div>
+												<div class="mt-0.5 font-mono text-xs text-app-muted">
 													{account.billing_email}
 												</div>
 											</div>
 											{#if selectedAccount === account.id}
-												<div class="text-blue-600 animate-in zoom-in duration-200">
+												<div
+													style="color: var(--color-accent)"
+													class="animate-in zoom-in duration-200"
+												>
 													<svg
 														xmlns="http://www.w3.org/2000/svg"
 														width="16"
@@ -293,7 +316,8 @@
 														stroke="currentColor"
 														stroke-width="3"
 														stroke-linecap="round"
-														stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
+														stroke-linejoin="round"
+														><polyline points="20 6 9 17 4 12" /></svg
 													>
 												</div>
 											{/if}
@@ -305,30 +329,35 @@
 					</div>
 				</div>
 
-				<!-- Column 2: Organization Selection -->
-				<div class="flex flex-col h-full space-y-4">
+				<div class="flex h-full flex-col space-y-4">
 					<div
-						class="flex-1 flex flex-col bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden opacity-100 transition-opacity duration-300 {selectedAccount
+						class="gac-panel-solid flex flex-1 flex-col overflow-hidden transition-opacity duration-300 {selectedAccount
 							? 'opacity-100'
-							: 'opacity-50 pointer-events-none grayscale'}"
+							: 'pointer-events-none opacity-50 grayscale'}"
 					>
-						<div class="p-4 border-b border-slate-100 bg-slate-50/50">
-							<label class="text-xs font-semibold text-slate-500 uppercase tracking-wider block"
-								>2. Seleccionar Organización</label
-							>
+						<div
+							class="p-4"
+							style="background: var(--color-bg-tertiary); border-bottom: 1px solid var(--color-border)"
+						>
+							<p class="block text-xs font-semibold uppercase tracking-wider text-app-muted">
+								2. Seleccionar Organización
+							</p>
 						</div>
 
-						<div class="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-slate-200">
+						<div class="flex-1 overflow-y-auto p-2">
 							{#if loadingOrgs}
-								<div class="flex flex-col items-center justify-center h-40 space-y-3">
+								<div class="flex h-40 flex-col items-center justify-center space-y-3">
 									<div
-										class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"
+										class="h-6 w-6 animate-spin rounded-full border-2 border-t-transparent"
+										style="border-color: var(--color-accent); border-top-color: transparent"
 									></div>
-									<span class="text-xs text-slate-400 font-medium">Buscando organizaciones...</span>
+									<span class="text-xs font-medium text-app-muted">
+										Buscando organizaciones...
+									</span>
 								</div>
 							{:else if !selectedAccount}
 								<div
-									class="flex flex-col items-center justify-center h-full text-center p-6 text-slate-400"
+									class="flex h-full flex-col items-center justify-center p-6 text-center text-app-muted"
 								>
 									<svg
 										class="mb-3 opacity-20"
@@ -357,27 +386,28 @@
 								</div>
 							{:else if organizations.length === 0}
 								<div
-									class="flex flex-col items-center justify-center h-full text-center p-6 text-slate-500 bg-slate-50/50 rounded-lg m-2 border border-dashed border-slate-200"
+									class="m-2 flex h-full flex-col items-center justify-center rounded-lg p-6 text-center"
+									style="background: var(--color-bg-tertiary); border: 1px dashed var(--color-border); color: var(--color-text-muted)"
 								>
-									<p class="font-medium text-sm">Sin organizaciones</p>
-									<p class="text-xs mt-1">Este cliente no tiene organizaciones activas.</p>
+									<p class="text-sm font-medium">Sin organizaciones</p>
+									<p class="mt-1 text-xs">Este cliente no tiene organizaciones activas.</p>
 								</div>
 							{:else}
 								<div class="space-y-2">
 									{#each organizations as org (org.id)}
 										<button
-											class="w-full text-left p-4 rounded-lg border transition-all duration-200 relative group
-                                            {selectedOrg === org.id
-												? 'bg-blue-50 border-blue-200 shadow-md ring-1 ring-blue-200'
-												: 'bg-white border-slate-100 hover:border-blue-200 hover:shadow-sm'}"
+											class="group relative w-full rounded-lg p-4 text-left transition-all duration-200"
+											style={selectedOrg === org.id
+												? 'background: var(--color-accent-soft); border: 1px solid var(--color-accent); box-shadow: var(--shadow-md)'
+												: 'background: transparent; border: 1px solid var(--color-border)'}
 											onclick={() => (selectedOrg = org.id)}
 										>
 											<div class="flex items-center gap-3">
 												<div
-													class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
-                                                    {selectedOrg === org.id
-														? 'bg-blue-100 text-blue-600'
-														: 'bg-slate-100 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-500'}"
+													class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
+													style={selectedOrg === org.id
+														? 'background: var(--color-accent-soft); color: var(--color-accent)'
+														: 'background: var(--color-bg-tertiary); color: var(--color-text-muted)'}
 												>
 													<svg
 														xmlns="http://www.w3.org/2000/svg"
@@ -394,22 +424,25 @@
 														/></svg
 													>
 												</div>
-												<div class="flex-1 min-w-0">
-													<div class="font-semibold text-slate-800 text-sm truncate">
+												<div class="min-w-0 flex-1">
+													<div class="truncate text-sm font-semibold text-app">
 														{org.name}
 													</div>
 													{#if org.billing_email}
-														<div class="text-xs text-slate-500 truncate">
+														<div class="truncate text-xs text-app-muted">
 															{org.billing_email}
 														</div>
 													{/if}
 												</div>
 												{#if selectedOrg === org.id}
-													<div class="absolute top-2 right-2 flex h-2 w-2">
+													<div class="absolute right-2 top-2 flex h-2 w-2">
 														<span
-															class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"
+															class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
+															style="background: var(--color-accent)"
 														></span>
-														<span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"
+														<span
+															class="relative inline-flex h-2 w-2 rounded-full"
+															style="background: var(--color-accent)"
 														></span>
 													</div>
 												{/if}
@@ -421,11 +454,10 @@
 						</div>
 					</div>
 
-					<!-- Action Button -->
 					<div class="pt-2">
 						<Button
 							variant="primary"
-							class="w-full h-12 shadow-lg shadow-blue-500/20 text-base font-medium disabled:opacity-50 disabled:shadow-none transition-all hover:-translate-y-0.5 active:translate-y-0"
+							class="h-12 w-full text-base font-medium transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
 							disabled={!selectedOrg || selectedDevices.length === 0}
 							onclick={handleAssign}
 						>
@@ -445,7 +477,8 @@
 										stroke="currentColor"
 										stroke-width="2"
 										stroke-linecap="round"
-										stroke-linejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg
+										stroke-linejoin="round"
+										><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg
 									>
 								</span>
 							{/if}
