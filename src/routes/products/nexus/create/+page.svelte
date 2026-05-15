@@ -60,13 +60,7 @@
 						required
 					/>
 
-					<Input
-						id="model"
-						label="Modelo"
-						placeholder="Ej: Nexus X1"
-						bind:value={model}
-						required
-					/>
+					<Input id="model" label="Modelo" placeholder="Ej: Nexus X1" bind:value={model} required />
 
 					<Input
 						id="provider"

@@ -117,7 +117,10 @@
 						<h3 class="text-2xl font-bold text-app">{nexusDeviceCount}</h3>
 						<p class="mt-1 text-xs text-app-muted">Inventario total</p>
 					</div>
-					<div class="rounded-lg p-3" style="background-color: var(--color-info-bg); color: var(--color-info)">
+					<div
+						class="rounded-lg p-3"
+						style="background-color: var(--color-info-bg); color: var(--color-info)"
+					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							width="22"
@@ -170,7 +173,12 @@
 				</div>
 			</Card>
 
-			<Card hover padding class="border-l-4" style="border-left-color: var(--color-accent-secondary)">
+			<Card
+				hover
+				padding
+				class="border-l-4"
+				style="border-left-color: var(--color-accent-secondary)"
+			>
 				<div class="flex items-center justify-between">
 					<div>
 						<p class="mb-1 text-xs font-medium uppercase tracking-wide text-app-muted">
@@ -425,9 +433,7 @@
 								></span>
 								<div class="min-w-0">
 									<p class="text-xs text-app-muted">Hace 10 min</p>
-									<p class="truncate text-sm font-medium text-app">
-										Nuevo dispositivo registrado
-									</p>
+									<p class="truncate text-sm font-medium text-app">Nuevo dispositivo registrado</p>
 									<p class="truncate text-xs text-app-muted">ID: 86756405…</p>
 								</div>
 							</li>

@@ -8,13 +8,7 @@
 	 * 	showThemeSwitcher?: boolean,
 	 * 	children?: import('svelte').Snippet
 	 * }} */
-	let {
-		title = 'Dashboard',
-		subtitle,
-		backUrl,
-		showThemeSwitcher = true,
-		children
-	} = $props();
+	let { title = 'Dashboard', subtitle, backUrl, showThemeSwitcher = true, children } = $props();
 </script>
 
 <header

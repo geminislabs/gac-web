@@ -165,9 +165,7 @@
 				Comandos del Dispositivo:
 				<span class="font-mono" style="color: var(--color-accent)">{deviceId}</span>
 			</h3>
-			<Button variant="ghost" size="sm" onclick={loadCommands} disabled={loading}>
-				Recargar
-			</Button>
+			<Button variant="ghost" size="sm" onclick={loadCommands} disabled={loading}>Recargar</Button>
 		</div>
 
 		<div class="grid grid-cols-1 md:grid-cols-3">
@@ -264,9 +262,7 @@
 													stroke-linejoin="round"
 												>
 													<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-													<path
-														d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-													></path>
+													<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
 												</svg>
 												<span class="sr-only">Copiar ID</span>
 											</button>
@@ -455,8 +451,7 @@
 						stroke-width="2"
 						stroke-linecap="round"
 						stroke-linejoin="round"
-						><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path
-							d="m9 11 3 3L22 4"
+						><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"
 						></path></svg
 					>
 				{:else if toast.type === 'error'}
@@ -470,11 +465,7 @@
 						stroke-width="2"
 						stroke-linecap="round"
 						stroke-linejoin="round"
-						><circle cx="12" cy="12" r="10"></circle><line
-							x1="12"
-							x2="12"
-							y1="8"
-							y2="12"
+						><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="12"
 						></line><line x1="12" x2="12.01" y1="16" y2="16"></line></svg
 					>
 				{/if}

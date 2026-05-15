@@ -109,9 +109,7 @@
 					style="border-bottom: 1px solid var(--color-border)"
 				>
 					<h3 class="font-semibold text-app">Dispositivos Asignados</h3>
-					<Button variant="outline" size="sm" onclick={handleAddDevice}>
-						Asignar Dispositivo
-					</Button>
+					<Button variant="outline" size="sm" onclick={handleAddDevice}>Asignar Dispositivo</Button>
 				</div>
 				<div class="overflow-x-auto">
 					<table class="gac-table">

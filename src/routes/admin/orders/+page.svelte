@@ -67,9 +67,12 @@
 	 */
 	function statusBadgeClass(status) {
 		const s = (status || '').toLowerCase();
-		if (['completed', 'completado', 'paid', 'pagado'].includes(s)) return 'gac-badge gac-badge-success';
-		if (['cancelled', 'cancelado', 'failed', 'fallido'].includes(s)) return 'gac-badge gac-badge-danger';
-		if (['pending', 'pendiente', 'processing', 'procesando'].includes(s)) return 'gac-badge gac-badge-warning';
+		if (['completed', 'completado', 'paid', 'pagado'].includes(s))
+			return 'gac-badge gac-badge-success';
+		if (['cancelled', 'cancelado', 'failed', 'fallido'].includes(s))
+			return 'gac-badge gac-badge-danger';
+		if (['pending', 'pendiente', 'processing', 'procesando'].includes(s))
+			return 'gac-badge gac-badge-warning';
 		return 'gac-badge gac-badge-neutral';
 	}
 

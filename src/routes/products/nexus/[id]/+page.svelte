@@ -146,9 +146,7 @@
 
 						<div class="mb-6 grid grid-cols-2 gap-6">
 							<div>
-								<p class="text-xs font-medium uppercase tracking-wider text-app-muted">
-									Proveedor
-								</p>
+								<p class="text-xs font-medium uppercase tracking-wider text-app-muted">Proveedor</p>
 								<p class="mt-1 text-app">{device.provider}</p>
 							</div>
 							<div>
@@ -158,9 +156,7 @@
 						</div>
 
 						<div>
-							<p class="mb-1 text-xs font-medium uppercase tracking-wider text-app-muted">
-								Notas
-							</p>
+							<p class="mb-1 text-xs font-medium uppercase tracking-wider text-app-muted">Notas</p>
 							<p
 								class="rounded-md p-3 text-sm"
 								style="background: var(--color-bg-tertiary); color: var(--color-text-secondary); border: 1px solid var(--color-border)"
@@ -257,20 +253,14 @@
 							>
 								<p class="text-sm text-app-muted">Sin cliente asignado</p>
 							</div>
-							<Button
-								variant="primary"
-								class="w-full"
-								onclick={() => (showAssignModal = true)}
-							>
+							<Button variant="primary" class="w-full" onclick={() => (showAssignModal = true)}>
 								Asignar a Cliente
 							</Button>
 						{/if}
 					</Card>
 
 					<Card class="p-6">
-						<h3 class="mb-4 text-sm font-medium uppercase tracking-wider text-app">
-							Acciones
-						</h3>
+						<h3 class="mb-4 text-sm font-medium uppercase tracking-wider text-app">Acciones</h3>
 						<div class="space-y-3">
 							<Button variant="secondary" class="w-full justify-start">
 								<svg
@@ -302,9 +292,9 @@
 									stroke-linecap="round"
 									stroke-linejoin="round"
 									class="mr-2"
-									><path d="M3 6h18" /><path
-										d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"
-									/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg
+									><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path
+										d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
+									/></svg
 								>
 								Eliminar Dispositivo
 							</Button>

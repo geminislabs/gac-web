@@ -169,9 +169,7 @@
 								class="h-4 w-4 rounded"
 								style="accent-color: var(--color-accent); border-color: var(--color-border)"
 							/>
-							<label for="is_active" class="text-sm font-medium text-app">
-								Producto activo
-							</label>
+							<label for="is_active" class="text-sm font-medium text-app"> Producto activo </label>
 						</div>
 
 						<div

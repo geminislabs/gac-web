@@ -51,8 +51,7 @@
 			/** @type {Record<string, any>} */
 			const vals = {};
 			(plan.capabilities || []).forEach((c) => {
-				vals[c.capability_code] =
-					c.value !== undefined ? c.value : (c.value_int ?? c.value_bool);
+				vals[c.capability_code] = c.value !== undefined ? c.value : (c.value_int ?? c.value_bool);
 			});
 			capabilityValues = vals;
 		});
@@ -141,7 +140,9 @@
 							<input type="checkbox" bind:checked={plan.is_active} class="peer sr-only" />
 							<div
 								class="peer h-4 w-8 rounded-full transition-colors peer-checked:after:translate-x-full after:absolute after:top-[2px] after:left-[2px] after:h-3 after:w-3 after:rounded-full after:bg-white after:transition-all"
-								style="background-color: {plan.is_active ? 'var(--color-success)' : 'var(--color-bg-elevated)'}"
+								style="background-color: {plan.is_active
+									? 'var(--color-success)'
+									: 'var(--color-bg-elevated)'}"
 							></div>
 						</div>
 					</label>
@@ -178,9 +179,7 @@
 					Producto asociado <span class="text-danger">*</span>
 				</h4>
 				{#if !selectedProductCode}
-					<p class="text-sm text-danger">
-						Debe seleccionar un producto antes de guardar el plan.
-					</p>
+					<p class="text-sm text-danger">Debe seleccionar un producto antes de guardar el plan.</p>
 				{/if}
 				<div class="space-y-3">
 					{#each availableProducts as product (product.code)}

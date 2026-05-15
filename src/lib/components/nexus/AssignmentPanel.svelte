@@ -3,8 +3,8 @@
 	import { DevicesService } from '$lib/services/devices';
 	import Button from '$lib/components/ui/Button.svelte';
 
-	/** @type {{ selectedDevices: string[], onClose: () => void, onSuccess: () => void }} */
-	let { selectedDevices = [], onClose, onSuccess } = $props();
+	/** @type {{ selectedDevices?: string[], onClose?: () => void, onSuccess?: () => void }} */
+	let { selectedDevices = $bindable([]), onClose = () => {}, onSuccess = () => {} } = $props();
 
 	/** @type {any[]} */
 	let accounts = $state([]);
@@ -193,9 +193,7 @@
 							style="background: var(--color-accent); width: {(progress / total) * 100}%"
 						></div>
 					</div>
-					<div
-						class="flex justify-between font-mono text-xs font-medium text-app-muted"
-					>
+					<div class="flex justify-between font-mono text-xs font-medium text-app-muted">
 						<span>0%</span>
 						<span>{((progress / total) * 100).toFixed(0)}%</span>
 						<span>100%</span>
@@ -208,9 +206,7 @@
 							<div class="text-2xl font-bold" style="color: var(--color-success)">
 								{successCount}
 							</div>
-							<div
-								class="text-xs font-semibold uppercase tracking-wide text-app-muted"
-							>
+							<div class="text-xs font-semibold uppercase tracking-wide text-app-muted">
 								Exitosos
 							</div>
 						</div>
@@ -219,9 +215,7 @@
 								<div class="text-2xl font-bold" style="color: var(--color-danger)">
 									{failCount}
 								</div>
-								<div
-									class="text-xs font-semibold uppercase tracking-wide text-app-muted"
-								>
+								<div class="text-xs font-semibold uppercase tracking-wide text-app-muted">
 									Fallidos
 								</div>
 							</div>
@@ -316,8 +310,7 @@
 														stroke="currentColor"
 														stroke-width="3"
 														stroke-linecap="round"
-														stroke-linejoin="round"
-														><polyline points="20 6 9 17 4 12" /></svg
+														stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
 													>
 												</div>
 											{/if}
@@ -477,8 +470,7 @@
 										stroke="currentColor"
 										stroke-width="2"
 										stroke-linecap="round"
-										stroke-linejoin="round"
-										><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg
+										stroke-linejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg
 									>
 								</span>
 							{/if}

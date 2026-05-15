@@ -41,11 +41,7 @@ import { api } from '$lib/services/api';
  */
 function normalizeListResponse(res) {
 	const raw = res ?? {};
-	const list =
-		(Array.isArray(raw.data) && raw.data) ||
-		raw.data?.products ||
-		raw.products ||
-		[];
+	const list = (Array.isArray(raw.data) && raw.data) || raw.data?.products || raw.products || [];
 	return { products: list, data: list };
 }
 

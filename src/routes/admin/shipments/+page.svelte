@@ -66,7 +66,8 @@
 	function statusBadgeClass(status) {
 		const s = (status || '').toLowerCase();
 		if (['delivered', 'entregado', 'completed'].includes(s)) return 'gac-badge gac-badge-success';
-		if (['failed', 'cancelled', 'lost', 'rechazado'].includes(s)) return 'gac-badge gac-badge-danger';
+		if (['failed', 'cancelled', 'lost', 'rechazado'].includes(s))
+			return 'gac-badge gac-badge-danger';
 		if (['in_transit', 'transito', 'shipped', 'enviado'].includes(s))
 			return 'gac-badge gac-badge-info';
 		if (['pending', 'pendiente', 'preparing', 'preparado'].includes(s))

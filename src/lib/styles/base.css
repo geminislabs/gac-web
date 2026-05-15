@@ -96,7 +96,9 @@ input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
 	-webkit-text-fill-color: var(--color-input-text);
-	transition: background-color 600000s 0s, color 600000s 0s;
+	transition:
+		background-color 600000s 0s,
+		color 600000s 0s;
 	caret-color: var(--color-input-text);
 }
 

@@ -10,7 +10,7 @@
 	import { TripsService } from '$lib/services/trips';
 
 	import { onMount, onDestroy } from 'svelte';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 	import { Loader } from '@googlemaps/js-api-loader';
 
@@ -41,34 +41,29 @@
 	/** @type {string | null} */
 	let selectedTripId = $state(null);
 
-	let isPlaying = $state(false);
-	let isPaused = $state(false);
-
-	/** @type {import('$lib/services/devices').DeviceCommunication[]} */
+	/** @type {Record<string, unknown>[]} */
 	let communications = $state([]);
 	let isLoadingCommunications = $state(false);
 
 	let hiddenColumns = new SvelteSet();
-	let showColumnSelector = $state(false);
 
 	/** @type {HTMLElement | undefined} */
 	let mapContainer = $state();
 
-	/** @type {google.maps.Map | null} */
+	/** @type {any} */
 	let map = $state(null);
 
 	/** @type {any} */
 	let googleRef = $state(null);
 
-	/** @type {Map<string, google.maps.Marker>} */
-	let vehicleMarkers = new Map();
+	/** @type {SvelteMap<string, any>} */
+	let vehicleMarkers = new SvelteMap();
 
 	/** @type {WebSocket | null} */
 	let socket = $state(null);
 
 	/** @type {string[]} */
 	let selectedDevicesForAssignment = $state([]);
-	let isAssignmentMode = $state(false);
 
 	/** @type {string | null} */
 	let streamDeviceId = $state(null);
@@ -145,7 +140,7 @@
 	 * Builds a vehicle SVG icon.
 	 * @param {boolean} isOnline
 	 * @param {number} [rotation=0]
-	 * @returns {google.maps.Symbol}
+	 * @returns {any}
 	 */
 	function getVehicleIcon(isOnline, rotation = 0) {
 		return {
@@ -473,7 +468,7 @@
 								<td colspan="4" class="px-6 py-8 text-center text-app-muted"> Sin dispositivos </td>
 							</tr>
 						{:else}
-							{#each filteredDevices as device}
+							{#each filteredDevices as device (device.device_id)}
 								<tr
 									class="cursor-pointer"
 									class:bg-white={selectedDeviceId === device.device_id}
@@ -503,7 +498,7 @@
 					class="flex shrink-0 gap-1 border-b px-4 pt-3"
 					style="border-color: var(--color-border)"
 				>
-					{#each [['commands', 'Comandos'], ['communications', 'En vivo'], ['assignment', 'Asignación']] as [tab, label]}
+					{#each [['commands', 'Comandos'], ['communications', 'En vivo'], ['assignment', 'Asignación']] as [tab, label] (tab)}
 						<button
 							class="rounded-t px-3 py-1.5 text-sm transition-colors"
 							style={activeTab === tab
@@ -522,7 +517,16 @@
 					</div>
 				{:else if activeTab === 'assignment'}
 					<div class="flex-1 overflow-auto p-4">
-						<AssignmentPanel bind:selectedDevices={selectedDevicesForAssignment} />
+						<AssignmentPanel
+							bind:selectedDevices={selectedDevicesForAssignment}
+							onClose={() => {
+								activeTab = 'commands';
+							}}
+							onSuccess={() => {
+								activeTab = 'commands';
+								loadDevices();
+							}}
+						/>
 					</div>
 				{:else}
 					<!-- Communications / live tab -->
@@ -538,7 +542,7 @@
 
 					<!-- Sub-tabs: trips / history -->
 					<div class="flex shrink-0 gap-1 border-b px-4" style="border-color: var(--color-border)">
-						{#each [['trips', 'Trayectos'], ['history', 'Historial']] as [tab, label]}
+						{#each [['trips', 'Trayectos'], ['history', 'Historial']] as [tab, label] (tab)}
 							<button
 								class="rounded-t px-3 py-1 text-xs transition-colors"
 								style={sidebarTab === tab
@@ -560,9 +564,12 @@
 									Sin trayectos para esta fecha
 								</p>
 							{:else}
-								{#each trips as trip}
+								{#each trips as trip (trip.trip_id)}
 									<button
+										type="button"
 										class="mb-2 w-full rounded-lg p-3 text-left gac-panel-solid"
+										class:ring-2={selectedTripId === trip.trip_id}
+										class:ring-sky-500={selectedTripId === trip.trip_id}
 										onclick={() => (selectedTripId = trip.trip_id)}
 									>
 										<span class="text-sm">{trip.trip_id}</span>
@@ -582,15 +589,15 @@
 									<table class="gac-table text-xs">
 										<thead>
 											<tr>
-												{#each allColumns.filter((c) => !hiddenColumns.has(c)) as col}
+												{#each allColumns.filter((c) => !hiddenColumns.has(c)) as col (col)}
 													<th>{col}</th>
 												{/each}
 											</tr>
 										</thead>
 										<tbody>
-											{#each communications as row}
+											{#each communications as row, rowIdx (row.id ?? row.received_at ?? `row-${rowIdx}`)}
 												<tr>
-													{#each allColumns.filter((c) => !hiddenColumns.has(c)) as col}
+													{#each allColumns.filter((c) => !hiddenColumns.has(c)) as col (col)}
 														<td>{row[col] ?? ''}</td>
 													{/each}
 												</tr>

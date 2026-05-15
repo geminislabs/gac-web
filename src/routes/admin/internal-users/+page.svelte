@@ -204,7 +204,7 @@
 									<td class="text-app-secondary">
 										{#if Array.isArray(user.roles) && user.roles.length > 0}
 											<div class="flex flex-wrap gap-1">
-												{#each user.roles as role}
+												{#each user.roles as role (role)}
 													<span class="gac-badge gac-badge-neutral">{role}</span>
 												{/each}
 											</div>
@@ -224,11 +224,7 @@
 											<a href="/admin/internal-users/{user.user_id}">
 												<Button variant="ghost" size="sm">Editar</Button>
 											</a>
-											<Button
-												variant="ghost"
-												size="sm"
-												onclick={() => requestDelete(user.user_id)}
-											>
+											<Button variant="ghost" size="sm" onclick={() => requestDelete(user.user_id)}>
 												<span class="text-danger">Desactivar</span>
 											</Button>
 										</div>

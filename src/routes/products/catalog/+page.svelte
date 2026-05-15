@@ -105,17 +105,12 @@
 
 	<div class="space-y-6 p-6 sm:p-8">
 		<Card class="p-4">
-			<div
-				class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center"
-			>
+			<div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
 				<div class="w-full md:w-96">
-					<Input
-						placeholder="Buscar por código o nombre…"
-						bind:value={searchTerm}
-					/>
+					<Input placeholder="Buscar por código o nombre…" bind:value={searchTerm} />
 				</div>
 				<div class="flex gap-2">
-					{#each filters as f}
+					{#each filters as f (f.id)}
 						<button
 							type="button"
 							onclick={() => (activeFilter = f.id)}

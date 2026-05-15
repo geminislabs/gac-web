@@ -154,12 +154,7 @@
 									bind:value={plan.price_monthly}
 									required
 								/>
-								<Input
-									label="Precio Anual"
-									type="number"
-									bind:value={plan.price_yearly}
-									required
-								/>
+								<Input label="Precio Anual" type="number" bind:value={plan.price_yearly} required />
 							</div>
 						</div>
 
@@ -176,9 +171,7 @@
 										class="flex cursor-pointer items-center rounded-lg p-3 transition-colors"
 										style="border: 1px solid {productCodes.includes(product.code)
 											? 'var(--color-accent)'
-											: 'var(--color-border)'}; background: {productCodes.includes(
-											product.code
-										)
+											: 'var(--color-border)'}; background: {productCodes.includes(product.code)
 											? 'var(--color-accent-soft)'
 											: 'transparent'}"
 									>

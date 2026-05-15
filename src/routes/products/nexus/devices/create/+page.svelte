@@ -98,12 +98,7 @@
 					</div>
 
 					<div class="col-span-2">
-						<Input
-							id="iccid"
-							label="ICCID (SIM)"
-							placeholder="89340..."
-							bind:value={iccid}
-						/>
+						<Input id="iccid" label="ICCID (SIM)" placeholder="89340..." bind:value={iccid} />
 					</div>
 
 					<div class="col-span-2 pt-4" style="border-top: 1px solid var(--color-border)">
@@ -140,12 +135,7 @@
 
 					<div class="col-span-2 space-y-2">
 						<label for="notes" class="gac-label">Notas</label>
-						<textarea
-							id="notes"
-							bind:value={notes}
-							rows="3"
-							class="gac-input w-full"
-						></textarea>
+						<textarea id="notes" bind:value={notes} rows="3" class="gac-input w-full"></textarea>
 					</div>
 				</div>
 

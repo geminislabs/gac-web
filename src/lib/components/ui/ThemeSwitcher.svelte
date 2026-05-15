@@ -3,9 +3,7 @@
 
 	let open = $state(false);
 	let current = $derived($theme);
-	let currentMeta = $derived(
-		AVAILABLE_THEMES.find((t) => t.id === current) ?? AVAILABLE_THEMES[0]
-	);
+	let currentMeta = $derived(AVAILABLE_THEMES.find((t) => t.id === current) ?? AVAILABLE_THEMES[0]);
 
 	function toggle() {
 		open = !open;

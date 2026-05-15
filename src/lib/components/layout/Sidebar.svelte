@@ -22,14 +22,7 @@
 	];
 
 	let userInitial = $derived(
-		(
-			$auth.user?.full_name ||
-			$auth.user?.name ||
-			$auth.user?.email ||
-			'U'
-		)
-			.charAt(0)
-			.toUpperCase()
+		($auth.user?.full_name || $auth.user?.name || $auth.user?.email || 'U').charAt(0).toUpperCase()
 	);
 
 	let userName = $derived(
@@ -102,9 +95,7 @@
 				title={isCollapsed ? item.label : undefined}
 				aria-current={isActive(item.href) ? 'page' : undefined}
 				class="group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium theme-transition
-					{isActive(item.href)
-					? 'text-app shadow-sm'
-					: 'text-app-secondary hover:text-app'}
+					{isActive(item.href) ? 'text-app shadow-sm' : 'text-app-secondary hover:text-app'}
 					{isCollapsed ? 'justify-center' : ''}"
 				style="
 					background: {isActive(item.href) ? 'var(--gradient-primary)' : 'transparent'};
@@ -112,13 +103,13 @@
 				"
 				onmouseenter={(e) => {
 					if (!isActive(item.href)) {
-						(/** @type {HTMLElement} */ (e.currentTarget)).style.backgroundColor =
+						/** @type {HTMLElement} */ (e.currentTarget).style.backgroundColor =
 							'var(--color-bg-elevated)';
 					}
 				}}
 				onmouseleave={(e) => {
 					if (!isActive(item.href)) {
-						(/** @type {HTMLElement} */ (e.currentTarget)).style.backgroundColor = 'transparent';
+						/** @type {HTMLElement} */ (e.currentTarget).style.backgroundColor = 'transparent';
 					}
 				}}
 			>
@@ -195,75 +186,75 @@
 							/>
 							<path d="M7 7h.01" />
 						</svg>
-				{:else if item.icon === 'Users'}
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="20"
-						height="20"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-						<circle cx="9" cy="7" r="4" />
-						<path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-						<path d="M16 3.13a4 4 0 0 1 0 7.75" />
-					</svg>
-				{:else if item.icon === 'ShoppingCart'}
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="20"
-						height="20"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<circle cx="9" cy="21" r="1" />
-						<circle cx="20" cy="21" r="1" />
-						<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-					</svg>
-				{:else if item.icon === 'CreditCard'}
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="20"
-						height="20"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<rect x="2" y="5" width="20" height="14" rx="2" />
-						<line x1="2" y1="10" x2="22" y2="10" />
-					</svg>
-				{:else if item.icon === 'Truck'}
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="20"
-						height="20"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<path d="M5 18H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3h3l4 5v5h-2" />
-						<circle cx="7.5" cy="18.5" r="2.5" />
-						<circle cx="17.5" cy="18.5" r="2.5" />
-					</svg>
-				{/if}
+					{:else if item.icon === 'Users'}
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+							<circle cx="9" cy="7" r="4" />
+							<path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+							<path d="M16 3.13a4 4 0 0 1 0 7.75" />
+						</svg>
+					{:else if item.icon === 'ShoppingCart'}
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<circle cx="9" cy="21" r="1" />
+							<circle cx="20" cy="21" r="1" />
+							<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+						</svg>
+					{:else if item.icon === 'CreditCard'}
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<rect x="2" y="5" width="20" height="14" rx="2" />
+							<line x1="2" y1="10" x2="22" y2="10" />
+						</svg>
+					{:else if item.icon === 'Truck'}
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M5 18H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3h3l4 5v5h-2" />
+							<circle cx="7.5" cy="18.5" r="2.5" />
+							<circle cx="17.5" cy="18.5" r="2.5" />
+						</svg>
+					{/if}
 				</span>
 
 				{#if !isCollapsed}

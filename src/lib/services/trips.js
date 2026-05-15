@@ -41,9 +41,7 @@ export const TripsService = {
 		});
 
 		const queryString = params.toString() ? `?${params.toString()}` : '';
-		return /** @type {Promise<{ trips: Trip[] }>} */ (
-			internalApi(`/trips${queryString}`)
-		);
+		return /** @type {Promise<{ trips: Trip[] }>} */ (internalApi(`/trips${queryString}`));
 	},
 
 	/**
@@ -59,8 +57,6 @@ export const TripsService = {
 		if (options.include_events) params.append('include_events', 'true');
 
 		const queryString = params.toString() ? `?${params.toString()}` : '';
-		return /** @type {Promise<Trip>} */ (
-			internalApi(`/trips/${tripId}${queryString}`)
-		);
+		return /** @type {Promise<Trip>} */ (internalApi(`/trips/${tripId}${queryString}`));
 	}
 };

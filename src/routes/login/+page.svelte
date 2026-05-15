@@ -215,12 +215,7 @@
 		left: 0;
 		right: 0;
 		height: 1px;
-		background: linear-gradient(
-			90deg,
-			transparent,
-			var(--color-accent-primary),
-			transparent
-		);
+		background: linear-gradient(90deg, transparent, var(--color-accent-primary), transparent);
 		opacity: 0.45;
 	}
 
@@ -281,11 +276,7 @@
 	.bg-aurora {
 		position: absolute;
 		inset: 0;
-		background: radial-gradient(
-			circle at 50% 50%,
-			var(--color-shadow-primary),
-			transparent 70%
-		);
+		background: radial-gradient(circle at 50% 50%, var(--color-shadow-primary), transparent 70%);
 		mix-blend-mode: screen;
 		animation: aurora-pulse 8s infinite alternate ease-in-out;
 	}

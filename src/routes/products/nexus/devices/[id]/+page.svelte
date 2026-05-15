@@ -177,12 +177,7 @@
 						</div>
 
 						<div class="col-span-2">
-							<Input
-								id="iccid"
-								label="ICCID (SIM)"
-								placeholder="89340..."
-								bind:value={iccid}
-							/>
+							<Input id="iccid" label="ICCID (SIM)" placeholder="89340..." bind:value={iccid} />
 						</div>
 
 						<div class="col-span-2 pt-4" style="border-top: 1px solid var(--color-border)">

@@ -27,14 +27,15 @@
 
 	let selectedPlan = $derived(plans.find((p) => p.id === selectedPlanId));
 
-	let productOptions = $derived(() => {
-		const map = new Map();
+	let productOptions = $derived.by(() => {
+		/** @type {Record<string, { code: string; name?: string }>} */
+		const byCode = {};
 		for (const p of plans) {
 			for (const prod of p.products || []) {
-				if (!map.has(prod.code)) map.set(prod.code, prod);
+				if (!byCode[prod.code]) byCode[prod.code] = prod;
 			}
 		}
-		return Array.from(map.values());
+		return Object.values(byCode);
 	});
 
 	onMount(loadPlans);
@@ -99,7 +100,7 @@
 					<div class="w-64">
 						<select bind:value={productFilter} class="gac-input">
 							<option value="">Todos los productos</option>
-							{#each productOptions() as product (product.code)}
+							{#each productOptions as product (product.code)}
 								<option value={product.code}>{product.name}</option>
 							{/each}
 						</select>
