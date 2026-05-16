@@ -39,19 +39,19 @@
 	}
 </script>
 
-<div class="flex flex-col min-h-screen">
+<div class="flex min-h-screen flex-col bg-app text-app">
 	<Topbar title="Nexus / Nuevo Dispositivo">
 		<a href="/products/nexus">
 			<Button variant="secondary" size="sm">Cancelar</Button>
 		</a>
 	</Topbar>
 
-	<div class="p-8 max-w-3xl mx-auto w-full">
+	<div class="mx-auto w-full max-w-3xl p-8">
 		<Card class="p-8">
-			<h2 class="text-xl font-semibold mb-6 text-slate-900">Registrar Nuevo Dispositivo</h2>
+			<h2 class="mb-6 text-xl font-semibold text-app">Registrar Nuevo Dispositivo</h2>
 
 			<form onsubmit={handleSubmit} class="space-y-6">
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 					<Input
 						id="device_id"
 						label="Device ID / IMEI"
@@ -80,53 +80,28 @@
 				</div>
 
 				<div class="w-full">
-					<label for="notes" class="block text-sm font-medium text-slate-700 mb-1"
-						>Notas Adicionales</label
-					>
+					<label for="notes" class="gac-label">Notas Adicionales</label>
 					<textarea
 						id="notes"
 						bind:value={notes}
 						rows="3"
-						class="flex w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
+						class="gac-input w-full"
 						placeholder="Información adicional..."
 					></textarea>
 				</div>
 
 				{#if error}
-					<div class="p-3 rounded-md bg-red-50 text-red-600 text-sm">
+					<div
+						class="rounded-md p-3 text-sm"
+						style="background: var(--color-danger-bg); color: var(--color-danger); border: 1px solid var(--color-danger)"
+					>
 						{error}
 					</div>
 				{/if}
 
 				<div class="flex justify-end pt-4">
 					<Button type="submit" variant="primary" disabled={isLoading} class="w-full md:w-auto">
-						{#if isLoading}
-							<span class="mr-2 animate-spin">
-								<svg
-									class="h-4 w-4 text-white"
-									xmlns="http://www.w3.org/2000/svg"
-									fill="none"
-									viewBox="0 0 24 24"
-								>
-									<circle
-										class="opacity-25"
-										cx="12"
-										cy="12"
-										r="10"
-										stroke="currentColor"
-										stroke-width="4"
-									></circle>
-									<path
-										class="opacity-75"
-										fill="currentColor"
-										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-									></path>
-								</svg>
-							</span>
-							Guardar Dispositivo
-						{:else}
-							Guardar Dispositivo
-						{/if}
+						{isLoading ? 'Guardando...' : 'Guardar Dispositivo'}
 					</Button>
 				</div>
 			</form>

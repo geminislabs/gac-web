@@ -101,46 +101,49 @@
 	}
 </script>
 
-<div class="flex flex-col min-h-screen">
+<div class="flex min-h-screen flex-col bg-app text-app">
 	<Topbar title={`Nexus / Dispositivo ${deviceId || '...'}`} backUrl="/products/nexus/devices" />
 
-	<div class="p-8 max-w-2xl mx-auto w-full">
+	<div class="mx-auto w-full max-w-2xl p-8">
 		<Card class="p-8">
-			<h2 class="text-xl font-bold text-slate-900 mb-6">Editar Dispositivo</h2>
+			<h2 class="mb-6 text-xl font-bold text-app">Editar Dispositivo</h2>
 
 			{#if isLoading}
-				<div class="p-8 text-center text-slate-500">Cargando información...</div>
+				<div class="p-8 text-center text-app-muted">Cargando información...</div>
 			{:else}
 				{#if errorMessage}
-					<div class="bg-red-50 text-red-600 p-4 rounded-md mb-6 text-sm">
+					<div
+						class="mb-6 rounded-md p-4 text-sm"
+						style="background: var(--color-danger-bg); color: var(--color-danger); border: 1px solid var(--color-danger)"
+					>
 						{errorMessage}
 					</div>
 				{/if}
 
 				{#if successMessage}
-					<div class="bg-green-50 text-green-600 p-4 rounded-md mb-6 text-sm">
+					<div
+						class="mb-6 rounded-md p-4 text-sm"
+						style="background: var(--color-success-bg); color: var(--color-success); border: 1px solid var(--color-success)"
+					>
 						{successMessage}
 					</div>
 				{/if}
 
 				<form onsubmit={handleSubmit} class="space-y-6">
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+					<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 						<div class="col-span-2">
-							<p class="block text-sm font-medium text-slate-700 mb-1">Device ID</p>
-							<div class="p-2 bg-slate-100 rounded text-slate-900 font-mono">
+							<p class="gac-label">Device ID</p>
+							<div
+								class="rounded-md p-2 font-mono"
+								style="background: var(--color-bg-tertiary); color: var(--color-text-primary); border: 1px solid var(--color-border)"
+							>
 								{deviceId}
 							</div>
 						</div>
 
-						<!-- Status display moved to editable select below -->
-
 						<div class="col-span-2 md:col-span-1">
-							<p class="block text-sm font-medium text-slate-700 mb-1">Estatus</p>
-							<select
-								id="status"
-								bind:value={status}
-								class="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition-all duration-200"
-							>
+							<label for="status" class="gac-label">Estatus</label>
+							<select id="status" bind:value={status} class="gac-input">
 								<option value="nuevo">Nuevo</option>
 								<option value="preparado">Preparado</option>
 								<option value="enviado">Enviado</option>
@@ -152,14 +155,16 @@
 						</div>
 
 						<div class="col-span-2 md:col-span-1">
-							<p class="block text-sm font-medium text-slate-700 mb-1">Cliente Asignado</p>
-							<div class="p-2 bg-slate-50 rounded text-slate-900 h-10 flex items-center">
+							<p class="gac-label">Cliente Asignado</p>
+							<div
+								class="flex h-10 items-center rounded-md p-2"
+								style="background: var(--color-bg-tertiary); color: var(--color-text-primary); border: 1px solid var(--color-border)"
+							>
 								{clientId || 'Sin asignar'}
 							</div>
 						</div>
 
 						<Input id="brand" label="Marca" placeholder="Suntech" bind:value={brand} required />
-
 						<Input id="model" label="Modelo" placeholder="ST4330" bind:value={model} required />
 
 						<div class="col-span-2">
@@ -175,18 +180,12 @@
 							<Input id="iccid" label="ICCID (SIM)" placeholder="89340..." bind:value={iccid} />
 						</div>
 
-						<div class="col-span-2 pt-4 border-t border-slate-200">
-							<h3 class="text-lg font-medium text-slate-800 mb-4">Carrier Profile</h3>
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div class="col-span-2 pt-4" style="border-top: 1px solid var(--color-border)">
+							<h3 class="mb-4 text-lg font-medium text-app">Carrier Profile</h3>
+							<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 								<div class="col-span-2 md:col-span-1">
-									<label for="carrier" class="block text-sm font-medium text-slate-700 mb-1">
-										Carrier
-									</label>
-									<select
-										id="carrier"
-										bind:value={carrier}
-										class="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition-all duration-200"
-									>
+									<label for="carrier" class="gac-label">Carrier</label>
+									<select id="carrier" bind:value={carrier} class="gac-input">
 										<option value="KORE">Kore</option>
 										<option value="other">Other</option>
 									</select>
@@ -214,13 +213,8 @@
 						</div>
 
 						<div class="col-span-2 space-y-2">
-							<label for="notes" class="text-sm font-medium text-slate-700">Notas</label>
-							<textarea
-								id="notes"
-								bind:value={notes}
-								rows="3"
-								class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
-							></textarea>
+							<label for="notes" class="gac-label">Notas</label>
+							<textarea id="notes" bind:value={notes} rows="3" class="gac-input w-full"></textarea>
 						</div>
 					</div>
 

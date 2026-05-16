@@ -56,7 +56,7 @@
 	});
 </script>
 
-<div class="flex flex-col min-h-screen">
+<div class="flex min-h-screen flex-col bg-app text-app">
 	<Topbar title="Nexus / Dashboard">
 		<a href="/products/nexus/devices/create">
 			<Button variant="primary" size="sm">
@@ -77,20 +77,18 @@
 		</a>
 	</Topbar>
 
-	<div class="p-8 space-y-6">
-		<!-- Counters -->
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+	<div class="space-y-6 p-8">
+		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
 			<a href="/products/nexus/devices" class="block transition-transform hover:scale-[1.02]">
-				<Card
-					class="p-6 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow"
-				>
+				<Card hover class="flex cursor-pointer items-center justify-between p-6">
 					<div>
-						<p class="text-sm font-medium text-slate-500">Total Equipos</p>
-						<p class="text-3xl font-bold text-slate-900">
-							{deviceCount}
-						</p>
+						<p class="text-sm font-medium text-app-muted">Total Equipos</p>
+						<p class="text-3xl font-bold text-app">{deviceCount}</p>
 					</div>
-					<div class="p-3 bg-blue-50 rounded-full text-blue-600">
+					<div
+						class="rounded-full p-3"
+						style="background: var(--color-accent-soft); color: var(--color-accent)"
+					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							width="24"
@@ -106,14 +104,15 @@
 					</div>
 				</Card>
 			</a>
-			<Card class="p-6 flex items-center justify-between">
+			<Card class="flex items-center justify-between p-6">
 				<div>
-					<p class="text-sm font-medium text-slate-500">Total Clientes</p>
-					<p class="text-3xl font-bold text-slate-900">
-						{clientCount}
-					</p>
+					<p class="text-sm font-medium text-app-muted">Total Clientes</p>
+					<p class="text-3xl font-bold text-app">{clientCount}</p>
 				</div>
-				<div class="p-3 bg-green-50 rounded-full text-green-600">
+				<div
+					class="rounded-full p-3"
+					style="background: var(--color-success-bg); color: var(--color-success)"
+				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						width="24"
@@ -133,14 +132,15 @@
 				</div>
 			</Card>
 			<a href="/products/plans" class="block transition-transform hover:scale-[1.02]">
-				<Card
-					class="p-6 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow"
-				>
+				<Card hover class="flex cursor-pointer items-center justify-between p-6">
 					<div>
-						<p class="text-sm font-medium text-slate-500">Planes de Servicio</p>
-						<p class="text-3xl font-bold text-slate-900">Gestionar</p>
+						<p class="text-sm font-medium text-app-muted">Planes de Servicio</p>
+						<p class="text-3xl font-bold text-app">Gestionar</p>
 					</div>
-					<div class="p-3 bg-purple-50 rounded-full text-purple-600">
+					<div
+						class="rounded-full p-3"
+						style="background: var(--color-info-bg); color: var(--color-info)"
+					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							width="24"
@@ -163,78 +163,70 @@
 			</a>
 		</div>
 
-		<!-- Client Search & List -->
 		<Card class="overflow-hidden">
-			<div class="p-4 border-b border-slate-100">
+			<div class="p-4" style="border-bottom: 1px solid var(--color-border)">
 				<div class="w-full md:w-96">
-					<Input placeholder="Buscar cliente..." bind:value={searchTerm} class="w-full" />
+					<Input placeholder="Buscar cliente..." bind:value={searchTerm} />
 				</div>
 			</div>
 			<div class="overflow-x-auto">
-				<table class="w-full text-sm text-left">
-					<thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+				<table class="gac-table">
+					<thead>
 						<tr>
-							<th class="px-6 py-4">Nombre</th>
-							<th class="px-6 py-4">Billing Email</th>
-							<th class="px-6 py-4">Estatus</th>
-							<th class="px-6 py-4">Creado</th>
-							<th class="px-6 py-4">Actualizado</th>
-							<th class="px-6 py-4 text-center">Usuarios</th>
-							<th class="px-6 py-4 text-center">Organizaciones</th>
-							<th class="px-6 py-4 text-right">Acciones</th>
+							<th>Nombre</th>
+							<th>Billing Email</th>
+							<th>Estatus</th>
+							<th>Creado</th>
+							<th>Actualizado</th>
+							<th class="text-center">Usuarios</th>
+							<th class="text-center">Organizaciones</th>
+							<th class="text-right">Acciones</th>
 						</tr>
 					</thead>
-					<tbody class="divide-y divide-slate-100">
+					<tbody>
 						{#if isLoading}
 							<tr>
-								<td colspan="7" class="px-6 py-8 text-center text-slate-500">
+								<td colspan="8" class="px-6 py-8 text-center text-app-muted">
 									Cargando clientes...
 								</td>
 							</tr>
 						{:else if filteredClients.length === 0}
 							<tr>
-								<td colspan="7" class="px-6 py-8 text-center text-slate-500">
+								<td colspan="8" class="px-6 py-8 text-center text-app-muted">
 									No se encontraron clientes.
 								</td>
 							</tr>
 						{:else}
 							{#each filteredClients as client (client.id)}
 								<tr
-									class="hover:bg-slate-50 transition-colors cursor-pointer"
+									class="cursor-pointer"
 									onclick={() => (window.location.href = `/products/nexus/accounts/${client.id}`)}
 								>
-									<td class="px-6 py-4">
-										<div class="font-medium text-slate-900">{client.name}</div>
-										<div class="text-xs text-slate-500">{client.ownerEmail || ''}</div>
+									<td>
+										<div class="font-medium text-app">{client.name}</div>
+										<div class="text-xs text-app-muted">{client.ownerEmail || ''}</div>
 									</td>
-									<td class="px-6 py-4 text-sm text-slate-600">
-										{client.billingEmail || '-'}
-									</td>
-									<td class="px-6 py-4">
+									<td>{client.billingEmail || '-'}</td>
+									<td>
 										<span
-											class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-												${
-													client.status === 'ACTIVE'
-														? 'bg-green-100 text-green-800'
-														: client.status === 'PENDING'
-															? 'bg-yellow-100 text-yellow-800'
-															: client.status === 'SUSPENDED'
-																? 'bg-red-100 text-red-800'
-																: 'bg-slate-100 text-slate-800'
-												}`}
+											class={`gac-badge ${
+												client.status === 'ACTIVE'
+													? 'gac-badge-success'
+													: client.status === 'PENDING'
+														? 'gac-badge-warning'
+														: client.status === 'SUSPENDED'
+															? 'gac-badge-danger'
+															: 'gac-badge-neutral'
+											}`}
 										>
 											{client.status}
 										</span>
 									</td>
-									<td class="px-6 py-4 text-slate-600">{client.formattedCreated}</td>
-									<td class="px-6 py-4 text-slate-600">{client.formattedUpdated}</td>
-									<td class="px-6 py-4 text-center text-slate-600">
-										{client.totalUsers}
-									</td>
-									<td class="px-6 py-4 text-center text-slate-600">
-										{client.totalOrganizations}
-									</td>
-									<td class="px-6 py-4 text-right">
+									<td>{client.formattedCreated}</td>
+									<td>{client.formattedUpdated}</td>
+									<td class="text-center">{client.totalUsers}</td>
+									<td class="text-center">{client.totalOrganizations}</td>
+									<td class="text-right">
 										<Button variant="ghost" size="sm">Ver Detalle</Button>
 									</td>
 								</tr>

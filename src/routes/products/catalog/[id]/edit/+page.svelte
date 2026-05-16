@@ -25,6 +25,7 @@
 	let isLoading = $state(true);
 	let isSubmitting = $state(false);
 
+	/** @param {string} name */
 	function validateName(name) {
 		if (!name) {
 			return 'El nombre es requerido';
@@ -35,14 +36,19 @@
 		return '';
 	}
 
+	/** @param {Event} e */
 	function handleNameInput(e) {
-		formData.name = e.target.value;
+		const target = /** @type {HTMLInputElement} */ (e.target);
+		formData.name = target.value;
 		errors.name = validateName(formData.name);
 	}
 
 	async function loadProduct() {
 		isLoading = true;
 		try {
+			if (!productId) {
+				throw new Error('ID de producto inválido');
+			}
 			const product = await ProductsService.getById(productId);
 			formData = {
 				code: product.code,
@@ -52,18 +58,18 @@
 			};
 		} catch (error) {
 			console.error('Error loading product:', error);
-			// @ts-ignore
-			toast.error('Error al cargar producto: ' + error.message);
+			const message = error instanceof Error ? error.message : String(error);
+			toast.error('Error al cargar producto: ' + message);
 			goto('/products/catalog');
 		} finally {
 			isLoading = false;
 		}
 	}
 
+	/** @param {SubmitEvent} e */
 	async function handleSubmit(e) {
 		e.preventDefault();
 
-		// Validate
 		errors.name = validateName(formData.name);
 
 		if (errors.name) {
@@ -72,20 +78,22 @@
 
 		isSubmitting = true;
 		try {
-			// Only send fields that can be updated (not code)
 			const updateData = {
 				name: formData.name,
 				description: formData.description,
 				is_active: formData.is_active
 			};
 
+			if (!productId) {
+				throw new Error('ID de producto inválido');
+			}
 			await ProductsService.update(productId, updateData);
 			toast.success('Producto actualizado exitosamente');
 			goto('/products/catalog');
 		} catch (error) {
 			console.error('Error updating product:', error);
-			// @ts-ignore
-			toast.error('Error al actualizar producto: ' + error.message);
+			const message = error instanceof Error ? error.message : String(error);
+			toast.error('Error al actualizar producto: ' + message);
 		} finally {
 			isSubmitting = false;
 		}
@@ -96,7 +104,7 @@
 	});
 </script>
 
-<div class="flex flex-col min-h-screen">
+<div class="flex flex-col min-h-screen bg-app text-app">
 	<Topbar title="Editar Producto">
 		<a href="/products/catalog">
 			<Button variant="ghost" size="sm">Cancelar</Button>
@@ -104,35 +112,28 @@
 	</Topbar>
 
 	<div class="p-8">
-		<div class="max-w-2xl mx-auto">
+		<div class="mx-auto max-w-2xl">
 			{#if isLoading}
 				<Card class="p-6">
-					<div class="flex justify-center items-center h-64">
-						<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+					<div class="flex h-64 items-center justify-center">
+						<div
+							class="h-8 w-8 animate-spin rounded-full border-b-2"
+							style="border-color: var(--color-accent)"
+						></div>
 					</div>
 				</Card>
 			{:else}
 				<Card class="p-6">
 					<form onsubmit={handleSubmit} class="space-y-6">
-						<!-- Code (Read-only) -->
 						<div>
-							<label for="code" class="block text-sm font-medium text-slate-700 mb-2">
-								Código
-							</label>
-							<Input
-								id="code"
-								type="text"
-								value={formData.code}
-								class="w-full bg-slate-50"
-								disabled
-							/>
-							<p class="mt-1 text-xs text-slate-500">El código no puede ser modificado</p>
+							<label for="code" class="gac-label">Código</label>
+							<Input id="code" type="text" value={formData.code} disabled />
+							<p class="mt-1 text-xs text-app-muted">El código no puede ser modificado</p>
 						</div>
 
-						<!-- Name -->
 						<div>
-							<label for="name" class="block text-sm font-medium text-slate-700 mb-2">
-								Nombre <span class="text-red-500">*</span>
+							<label for="name" class="gac-label">
+								Nombre <span style="color: var(--color-danger)">*</span>
 							</label>
 							<Input
 								id="name"
@@ -140,46 +141,41 @@
 								placeholder="ej: GPS Tracker Premium"
 								value={formData.name}
 								oninput={handleNameInput}
-								class="w-full {errors.name ? 'border-red-500' : ''}"
+								error={errors.name}
 								required
 							/>
-							{#if errors.name}
-								<p class="mt-1 text-sm text-red-600">{errors.name}</p>
-							{:else}
-								<p class="mt-1 text-xs text-slate-500">Máximo 255 caracteres</p>
+							{#if !errors.name}
+								<p class="mt-1 text-xs text-app-muted">Máximo 255 caracteres</p>
 							{/if}
 						</div>
 
-						<!-- Description -->
 						<div>
-							<label for="description" class="block text-sm font-medium text-slate-700 mb-2">
-								Descripción
-							</label>
+							<label for="description" class="gac-label">Descripción</label>
 							<textarea
 								id="description"
 								bind:value={formData.description}
 								placeholder="Descripción detallada del producto..."
 								rows="4"
-								class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+								class="gac-input w-full"
 							></textarea>
-							<p class="mt-1 text-xs text-slate-500">Opcional</p>
+							<p class="mt-1 text-xs text-app-muted">Opcional</p>
 						</div>
 
-						<!-- Is Active -->
 						<div class="flex items-center space-x-3">
 							<input
 								id="is_active"
 								type="checkbox"
 								bind:checked={formData.is_active}
-								class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+								class="h-4 w-4 rounded"
+								style="accent-color: var(--color-accent); border-color: var(--color-border)"
 							/>
-							<label for="is_active" class="text-sm font-medium text-slate-700">
-								Producto activo
-							</label>
+							<label for="is_active" class="text-sm font-medium text-app"> Producto activo </label>
 						</div>
 
-						<!-- Submit Button -->
-						<div class="flex justify-end space-x-3 pt-4 border-t border-slate-200">
+						<div
+							class="flex justify-end space-x-3 pt-4"
+							style="border-top: 1px solid var(--color-border)"
+						>
 							<a href="/products/catalog">
 								<Button variant="ghost" type="button">Cancelar</Button>
 							</a>

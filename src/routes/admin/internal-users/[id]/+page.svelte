@@ -5,6 +5,7 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import { goto } from '$app/navigation';
 	import { userService } from '$lib/services/users';
+	import { toast } from '$lib/stores/toast';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 
@@ -12,28 +13,30 @@
 	let name = $state('');
 	let email = $state('');
 	let password = $state('');
-	/** @type {any[]} */
+	/** @type {string[]} */
 	let selectedRoles = $state([]);
-	/** @type {any[]} */
+	/** @type {Array<{ role_id?: string, name: string }>} */
 	let availableRoles = $state([]);
 	let isActive = $state(true);
 	let isLoading = $state(true);
 	let isSaving = $state(false);
 	let error = $state('');
 
+	const FALLBACK_ROLES = [{ name: 'admin' }, { name: 'user' }, { name: 'viewer' }];
+
 	async function loadRoles() {
 		try {
 			const res = await userService.getRoles();
 			if (Array.isArray(res)) {
 				availableRoles = res;
-			} else if (res && res.data && Array.isArray(res.data)) {
+			} else if (res && Array.isArray(res.data)) {
 				availableRoles = res.data;
 			} else {
-				availableRoles = [];
+				availableRoles = FALLBACK_ROLES;
 			}
 		} catch (e) {
 			console.error('Error loading roles', e);
-			availableRoles = [{ name: 'admin' }, { name: 'user' }, { name: 'viewer' }];
+			availableRoles = FALLBACK_ROLES;
 		}
 	}
 
@@ -41,11 +44,10 @@
 		try {
 			const res = await userService.getUser(userId);
 			const userData = res.data || res;
-
 			name = userData.full_name || '';
 			email = userData.email || '';
 			isActive = userData.is_active !== undefined ? userData.is_active : true;
-			selectedRoles = userData.roles || [];
+			selectedRoles = Array.isArray(userData.roles) ? userData.roles : [];
 		} catch (e) {
 			console.error('Error loading user:', e);
 			error = 'Error al cargar usuario.';
@@ -63,11 +65,9 @@
 
 	/** @param {string} roleName */
 	function toggleRole(roleName) {
-		if (selectedRoles.includes(roleName)) {
-			selectedRoles = selectedRoles.filter((r) => r !== roleName);
-		} else {
-			selectedRoles = [...selectedRoles, roleName];
-		}
+		selectedRoles = selectedRoles.includes(roleName)
+			? selectedRoles.filter((r) => r !== roleName)
+			: [...selectedRoles, roleName];
 	}
 
 	/** @param {SubmitEvent} e */
@@ -76,21 +76,19 @@
 		isSaving = true;
 		error = '';
 
-		/** @type {{full_name: string, email: string, is_active: boolean, roles: any[], password?: string}} */
-		const payload = {
+		const payload = /** @type {Record<string, any>} */ ({
 			full_name: name,
-			email,
 			is_active: isActive,
 			roles: selectedRoles
-		};
-
-		if (password) {
-			payload.password = password;
-		}
+		});
 
 		try {
 			await userService.updateUser(userId, payload);
-			goto('/admin/internal-users');
+			if (password) {
+				await userService.resetPassword(userId, password);
+			}
+			toast.success('Usuario actualizado correctamente');
+			await goto('/admin/internal-users');
 		} catch (err) {
 			console.error('Failed to update user:', err);
 			error = /** @type {any} */ (err).message || 'Error al actualizar usuario.';
@@ -100,28 +98,30 @@
 	}
 </script>
 
-<div class="flex flex-col min-h-screen">
-	<Topbar title="Usuarios / Editar">
+<div class="flex min-h-screen flex-col">
+	<Topbar title="Usuarios" subtitle="Editar usuario interno" backUrl="/admin/internal-users">
 		<a href="/admin/internal-users">
-			<Button variant="secondary" size="sm">Cancelar</Button>
+			<Button variant="ghost" size="sm">Cancelar</Button>
 		</a>
 	</Topbar>
 
-	<div class="p-8 max-w-2xl mx-auto w-full">
-		<Card class="p-8">
-			<h2 class="text-xl font-semibold mb-6 text-slate-900">Editar Usuario</h2>
+	<div class="mx-auto w-full max-w-2xl p-6 sm:p-8">
+		<Card class="p-6 sm:p-8">
+			<h2 class="mb-6 text-xl font-semibold text-app">Editar usuario</h2>
 
 			{#if isLoading}
-				<div class="py-12 flex justify-center">
+				<div class="flex justify-center py-12">
 					<div
-						class="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"
+						class="h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"
+						style="border-color: var(--color-accent-primary); border-top-color: transparent"
+						aria-label="Cargando"
 					></div>
 				</div>
 			{:else}
-				<form onsubmit={handleSubmit} class="space-y-6">
+				<form onsubmit={handleSubmit} class="space-y-5">
 					<Input
 						id="name"
-						label="Nombre Completo"
+						label="Nombre completo"
 						placeholder="Ej: Juan Pérez"
 						bind:value={name}
 						required
@@ -129,29 +129,30 @@
 
 					<Input
 						id="email"
-						label="Correo Electrónico"
+						label="Correo electrónico"
 						type="email"
 						placeholder="usuario@geminislabs.com"
-						bind:value={email}
-						required
+						value={email}
+						disabled
 					/>
 
 					<Input
 						id="password"
-						label="Nueva Contraseña (Opcional)"
+						label="Nueva contraseña (opcional)"
 						type="password"
 						placeholder="Dejar vacía para mantener la actual"
+						autocomplete="new-password"
 						bind:value={password}
 					/>
 
-					<!-- Active Status Toggle -->
-					<div class="flex items-center space-x-3">
-						<span class="text-sm font-medium text-slate-700" id="status-label">Estado:</span>
+					<div class="flex items-center gap-3">
+						<span class="gac-label mb-0" id="status-label">Estado</span>
 						<button
 							type="button"
-							class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {isActive
-								? 'bg-blue-600'
-								: 'bg-slate-200'}"
+							class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2"
+							style="background-color: {isActive
+								? 'var(--color-accent-primary)'
+								: 'var(--color-bg-elevated)'}; --tw-ring-color: var(--color-accent-primary)"
 							role="switch"
 							aria-checked={isActive}
 							aria-labelledby="status-label"
@@ -159,53 +160,55 @@
 						>
 							<span
 								aria-hidden="true"
-								class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {isActive
-									? 'translate-x-5'
-									: 'translate-x-0'}"
+								class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+								style="transform: translateX({isActive ? '1.25rem' : '0'})"
 							></span>
 						</button>
-						<span class="text-sm text-slate-600">{isActive ? 'Activo' : 'Inactivo'}</span>
+						<span class="text-sm text-app-secondary">{isActive ? 'Activo' : 'Inactivo'}</span>
 					</div>
 
 					<div class="space-y-2">
-						<span class="block text-sm font-medium text-slate-700" id="roles-label">Roles</span>
+						<span class="gac-label" id="roles-label">Roles</span>
 						{#if availableRoles.length > 0}
 							<div class="flex flex-wrap gap-2" role="group" aria-labelledby="roles-label">
-								{#each availableRoles as role (typeof role === 'string' ? role : role.role_id || role.name)}
-									{@const roleName = typeof role === 'string' ? role : role.name}
+								{#each availableRoles as role (role.role_id || role.name)}
+									{@const active = selectedRoles.includes(role.name)}
 									<button
 										type="button"
-										class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors border {selectedRoles.includes(
-											roleName
-										)
-											? 'bg-blue-100 text-blue-700 border-blue-200'
-											: 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}"
-										onclick={() => toggleRole(roleName)}
+										class="rounded-full border px-3 py-1.5 text-sm font-medium transition-colors"
+										style={active
+											? 'background-color: var(--color-accent-soft); color: var(--color-accent-primary); border-color: var(--color-accent-primary);'
+											: 'background-color: var(--color-bg-elevated); color: var(--color-text-secondary); border-color: var(--color-border);'}
+										onclick={() => toggleRole(role.name)}
+										aria-pressed={active}
 									>
-										{roleName}
+										{role.name}
 									</button>
 								{/each}
 							</div>
 						{:else}
-							<p class="text-sm text-slate-500 italic">
+							<p class="text-sm italic text-app-muted">
 								No hay roles disponibles para seleccionar.
 							</p>
 						{/if}
 					</div>
 
 					{#if error}
-						<div class="p-3 rounded-md bg-red-50 text-red-600 text-sm">
+						<div
+							class="rounded-md border p-3 text-sm"
+							style="background-color: var(--color-danger-bg); color: var(--color-danger); border-color: color-mix(in srgb, var(--color-danger) 30%, transparent)"
+							role="alert"
+						>
 							{error}
 						</div>
 					{/if}
 
-					<div class="flex justify-end pt-4">
+					<div class="flex justify-end gap-3 pt-4">
+						<a href="/admin/internal-users">
+							<Button variant="outline">Cancelar</Button>
+						</a>
 						<Button type="submit" variant="primary" disabled={isSaving}>
-							{#if isSaving}
-								Guardando...
-							{:else}
-								Guardar Cambios
-							{/if}
+							{isSaving ? 'Guardando…' : 'Guardar cambios'}
 						</Button>
 					</div>
 				</form>

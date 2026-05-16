@@ -1,32 +1,54 @@
 import { internalApi } from '$lib/services/api';
 
 /**
- * Service to interact with the Trips API
+ * @typedef {Object} Trip
+ * @property {string} trip_id
+ * @property {string} device_id
+ * @property {string} [start_at]
+ * @property {string} [end_at]
+ * @property {number} [distance_km]
+ * @property {number} [duration_seconds]
+ * @property {number} [max_speed]
+ * @property {number} [avg_speed]
  */
+
+/**
+ * @typedef {Object} TripFilters
+ * @property {string} [device_id]
+ * @property {string} [day]
+ * @property {string} [tz]
+ */
+
+/**
+ * @typedef {Object} TripDetailOptions
+ * @property {boolean} [include_alerts]
+ * @property {boolean} [include_points]
+ * @property {boolean} [include_events]
+ */
+
 export const TripsService = {
-	/*
-	 * Get trips list
+	/**
+	 * Lista trayectos de un dispositivo.
+	 * @param {TripFilters} [filters]
+	 * @returns {Promise<{ trips: Trip[] }>}
 	 */
 	async getTrips(filters = {}) {
 		const params = new URLSearchParams();
 		Object.entries(filters).forEach(([key, value]) => {
 			if (value !== null && value !== undefined && value !== '') {
-				params.append(key, value.toString());
+				params.append(key, String(value));
 			}
 		});
 
 		const queryString = params.toString() ? `?${params.toString()}` : '';
-		return internalApi(`/trips${queryString}`);
+		return /** @type {Promise<{ trips: Trip[] }>} */ (internalApi(`/trips${queryString}`));
 	},
 
 	/**
-	 * Get trip details by ID
+	 * Detalle de un trayecto.
 	 * @param {string} tripId
-	 * @param {Object} options
-	 * @param {boolean} [options.include_alerts]
-	 * @param {boolean} [options.include_points]
-	 * @param {boolean} [options.include_events]
-	 * @returns {Promise<Object>}
+	 * @param {TripDetailOptions} [options]
+	 * @returns {Promise<Trip>}
 	 */
 	async getTripById(tripId, options = {}) {
 		const params = new URLSearchParams();
@@ -35,6 +57,6 @@ export const TripsService = {
 		if (options.include_events) params.append('include_events', 'true');
 
 		const queryString = params.toString() ? `?${params.toString()}` : '';
-		return internalApi(`/trips/${tripId}${queryString}`);
+		return /** @type {Promise<Trip>} */ (internalApi(`/trips/${tripId}${queryString}`));
 	}
 };

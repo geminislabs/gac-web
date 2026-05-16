@@ -1,85 +1,127 @@
-import { internalApi } from '$lib/services/api';
+import { api } from '$lib/services/api';
 
 /**
- * Service to interact with the Products API
+ * @typedef {Object} Product
+ * @property {string} id
+ * @property {string} code
+ * @property {string} name
+ * @property {string} [description]
+ * @property {boolean} is_active
+ * @property {string} [created_at]
+ * @property {string} [updated_at]
  */
+
+/**
+ * @typedef {Object} ProductFilters
+ * @property {string} [search]
+ * @property {boolean} [is_active]
+ * @property {number} [limit]
+ * @property {number} [offset]
+ */
+
+/**
+ * @typedef {Object} ProductCreatePayload
+ * @property {string} code
+ * @property {string} name
+ * @property {string} [description]
+ * @property {boolean} [is_active]
+ */
+
+/**
+ * @typedef {Object} ProductUpdatePayload
+ * @property {string} [name]
+ * @property {string} [description]
+ * @property {boolean} [is_active]
+ */
+
+/**
+ * Normaliza la respuesta del listado (`ResponseModel` con `data` array o formato legado).
+ * @param {Record<string, any>|null|undefined} res
+ * @returns {{ products: Product[], data: Product[] }}
+ */
+function normalizeListResponse(res) {
+	const raw = res ?? {};
+	const list = (Array.isArray(raw.data) && raw.data) || raw.data?.products || raw.products || [];
+	return { products: list, data: list };
+}
+
+/**
+ * @param {Record<string, any>|null|undefined} res
+ * @returns {any}
+ */
+function unwrapData(res) {
+	if (res && typeof res === 'object' && 'data' in res && res.data !== undefined) {
+		return res.data;
+	}
+	return res;
+}
+
 export const ProductsService = {
 	/**
-	 * Get all products
-	 * @param {Object} filters - Filter options
-	 * @param {string} [filters.search] - Search by code or name
-	 * @param {boolean} [filters.is_active] - Filter by active status
-	 * @param {number} [filters.limit] - Maximum results
-	 * @param {number} [filters.offset] - Pagination offset
-	 * @returns {Promise<Object>}
+	 * Lista productos del catálogo (gac-api JWT admin, vía `/api/gac`).
+	 * @param {ProductFilters} [filters]
+	 * @returns {Promise<{ products: Product[], data?: Product[] }>}
 	 */
 	async getAll(filters = {}) {
 		const params = new URLSearchParams();
-
-		// Default limit if not specified
-		if (!filters.limit) {
-			params.append('limit', '50');
-		}
+		if (!filters.limit) params.append('limit', '50');
 
 		Object.entries(filters).forEach(([key, value]) => {
 			if (value !== null && value !== undefined && value !== '') {
-				params.append(key, value.toString());
+				params.append(key, String(value));
 			}
 		});
 
 		const queryString = params.toString() ? `?${params.toString()}` : '';
-		return internalApi(`/internal/products${queryString}`);
+		const res = await api(`/internal/products${queryString}`);
+		return /** @type {Promise<{ products: Product[], data?: Product[] }>} */ (
+			normalizeListResponse(res)
+		);
 	},
 
 	/**
-	 * Get a specific product by ID
-	 * @param {string} id - Product ID
-	 * @returns {Promise<Object>}
+	 * Obtiene un producto por ID.
+	 * @param {string} id
+	 * @returns {Promise<Product>}
 	 */
 	async getById(id) {
-		return internalApi(`/internal/products/${id}`);
+		const res = await api(`/internal/products/${id}`);
+		return /** @type {Promise<Product>} */ (unwrapData(res));
 	},
 
 	/**
-	 * Create a new product
-	 * @param {Object} data - Product data
-	 * @param {string} data.code - Unique product code
-	 * @param {string} data.name - Product name
-	 * @param {string} [data.description] - Product description
-	 * @param {boolean} [data.is_active] - Active status
-	 * @returns {Promise<Object>}
+	 * Crea un nuevo producto.
+	 * @param {ProductCreatePayload} data
+	 * @returns {Promise<Product>}
 	 */
 	async create(data) {
-		return internalApi('/internal/products', {
+		const res = await api('/internal/products', {
 			method: 'POST',
 			body: JSON.stringify(data)
 		});
+		return /** @type {Promise<Product>} */ (unwrapData(res));
 	},
 
 	/**
-	 * Update a product
-	 * @param {string} id - Product ID
-	 * @param {Object} data - Updated product data
-	 * @param {string} [data.name] - Product name
-	 * @param {string} [data.description] - Product description
-	 * @param {boolean} [data.is_active] - Active status
-	 * @returns {Promise<Object>}
+	 * Actualiza un producto existente.
+	 * @param {string} id
+	 * @param {ProductUpdatePayload} data
+	 * @returns {Promise<Product>}
 	 */
 	async update(id, data) {
-		return internalApi(`/internal/products/${id}`, {
+		const res = await api(`/internal/products/${id}`, {
 			method: 'PATCH',
 			body: JSON.stringify(data)
 		});
+		return /** @type {Promise<Product>} */ (unwrapData(res));
 	},
 
 	/**
-	 * Soft delete a product (sets is_active = false)
-	 * @param {string} id - Product ID
+	 * Soft delete (is_active = false).
+	 * @param {string} id
 	 * @returns {Promise<void>}
 	 */
 	async delete(id) {
-		return internalApi(`/internal/products/${id}`, {
-			method: 'DELETE'
-		});
+		await api(`/internal/products/${id}`, { method: 'DELETE' });
 	}
 };

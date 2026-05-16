@@ -1,38 +1,78 @@
 <script>
+	import Button from './Button.svelte';
+
+	/** @type {{
+	 * 	isOpen?: boolean,
+	 * 	title?: string,
+	 * 	message?: string,
+	 * 	confirmLabel?: string,
+	 * 	cancelLabel?: string,
+	 * 	variant?: 'danger' | 'info',
+	 * 	onConfirm?: () => void | Promise<void>,
+	 * 	onCancel?: () => void
+	 * }} */
 	let {
 		isOpen = $bindable(false),
 		title = 'Confirmar acción',
 		message = '',
-		onConfirm = () => {},
 		confirmLabel = 'Confirmar',
 		cancelLabel = 'Cancelar',
-		variant = 'danger'
+		variant = 'danger',
+		onConfirm = () => {},
+		onCancel
 	} = $props();
 
-	function handleConfirm() {
-		onConfirm();
-		isOpen = false;
+	async function handleConfirm() {
+		try {
+			await onConfirm();
+		} finally {
+			isOpen = false;
+		}
 	}
 
 	function handleCancel() {
+		onCancel?.();
 		isOpen = false;
+	}
+
+	/** @param {KeyboardEvent} event */
+	function handleKeydown(event) {
+		if (event.key === 'Escape') {
+			event.preventDefault();
+			handleCancel();
+		}
 	}
 </script>
 
+<svelte:window onkeydown={isOpen ? handleKeydown : undefined} />
+
 {#if isOpen}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+		class="gac-modal-backdrop"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="confirm-dialog-title"
 		onclick={handleCancel}
+		onkeydown={(e) => e.key === 'Enter' && handleCancel()}
+		tabindex="-1"
 	>
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 		<div
-			class="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4"
+			class="gac-modal p-6 space-y-4"
+			role="document"
 			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			tabindex="-1"
 		>
-			<div class="flex items-start space-x-3">
-				{#if variant === 'danger'}
-					<div
-						class="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center"
-					>
+			<div class="flex items-start gap-3">
+				<div
+					class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center {variant ===
+					'danger'
+						? 'bg-app-tertiary text-danger'
+						: 'bg-app-tertiary text-info'}"
+					aria-hidden="true"
+				>
+					{#if variant === 'danger'}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							width="20"
@@ -43,19 +83,14 @@
 							stroke-width="2"
 							stroke-linecap="round"
 							stroke-linejoin="round"
-							class="text-red-600"
 						>
 							<path
-								d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
-							></path>
-							<line x1="12" y1="9" x2="12" y2="13"></line>
-							<line x1="12" y1="17" x2="12.01" y2="17"></line>
+								d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+							/>
+							<line x1="12" y1="9" x2="12" y2="13" />
+							<line x1="12" y1="17" x2="12.01" y2="17" />
 						</svg>
-					</div>
-				{:else}
-					<div
-						class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center"
-					>
+					{:else}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							width="20"
@@ -66,33 +101,30 @@
 							stroke-width="2"
 							stroke-linecap="round"
 							stroke-linejoin="round"
-							class="text-blue-600"
 						>
-							<circle cx="12" cy="12" r="10"></circle>
-							<line x1="12" y1="16" x2="12" y2="12"></line>
-							<line x1="12" y1="8" x2="12.01" y2="8"></line>
+							<circle cx="12" cy="12" r="10" />
+							<line x1="12" y1="16" x2="12" y2="12" />
+							<line x1="12" y1="8" x2="12.01" y2="8" />
 						</svg>
-					</div>
-				{/if}
+					{/if}
+				</div>
 				<div class="flex-1">
-					<h3 class="text-lg font-semibold text-slate-900">{title}</h3>
-					<p class="mt-2 text-sm text-slate-600">{message}</p>
+					<h3 id="confirm-dialog-title" class="text-lg font-semibold text-app">{title}</h3>
+					{#if message}
+						<p class="mt-2 text-sm text-app-secondary">{message}</p>
+					{/if}
 				</div>
 			</div>
-			<div class="flex justify-end space-x-3 pt-2">
-				<button
-					onclick={handleCancel}
-					class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
-				>
-					{cancelLabel}
-				</button>
-				<button
+
+			<div class="flex justify-end gap-3 pt-2">
+				<Button variant="outline" size="sm" onclick={handleCancel}>{cancelLabel}</Button>
+				<Button
+					variant={variant === 'danger' ? 'danger' : 'primary'}
+					size="sm"
 					onclick={handleConfirm}
-					class="px-4 py-2 text-sm font-medium text-white rounded-md transition-colors
-						{variant === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}"
 				>
 					{confirmLabel}
-				</button>
+				</Button>
 			</div>
 		</div>
 	</div>

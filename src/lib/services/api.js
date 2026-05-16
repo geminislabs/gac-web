@@ -175,15 +175,21 @@ async function performRefresh() {
 	if (!currentAuth.refreshToken) return false;
 
 	try {
-		const response = await api(`auth/refresh?refresh_token=${currentAuth.refreshToken}`, {
+		const response = await api('auth/refresh', {
 			method: 'POST',
+			body: JSON.stringify({ refresh_token: currentAuth.refreshToken }),
 			_skipRefresh: true
 		});
 
-		const newToken = response.data?.access_token;
+		const newAccess = response?.data?.access_token;
+		const newRefresh = response?.data?.refresh_token;
 
-		if (newToken) {
-			authStore.update((s) => ({ ...s, token: newToken }));
+		if (newAccess) {
+			authStore.update((s) => ({
+				...s,
+				token: newAccess,
+				refreshToken: newRefresh ?? s.refreshToken
+			}));
 			return true;
 		}
 	} catch (error) {

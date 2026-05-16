@@ -5,49 +5,44 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import { goto } from '$app/navigation';
 	import { userService } from '$lib/services/users';
+	import { toast } from '$lib/stores/toast';
 	import { onMount } from 'svelte';
 
 	let name = $state('');
 	let email = $state('');
 	let password = $state('');
-	/** @type {any[]} */
+	/** @type {string[]} */
 	let selectedRoles = $state([]);
-	/** @type {any[]} */
+	/** @type {Array<{ role_id?: string, name: string }>} */
 	let availableRoles = $state([]);
 	let isLoading = $state(false);
 	let error = $state('');
 
+	const FALLBACK_ROLES = [{ name: 'admin' }, { name: 'user' }, { name: 'viewer' }];
+
 	async function loadRoles() {
 		try {
 			const res = await userService.getRoles();
-			// Handle different potential response structures
 			if (Array.isArray(res)) {
 				availableRoles = res;
-			} else if (res && res.data && Array.isArray(res.data)) {
+			} else if (res && Array.isArray(res.data)) {
 				availableRoles = res.data;
 			} else {
-				// Fallback if no roles found or different structure
-				console.warn('Could not load roles or unexpected format', res);
-				availableRoles = [];
+				availableRoles = FALLBACK_ROLES;
 			}
 		} catch (e) {
 			console.error('Error loading roles', e);
-			// Fallback roles if API fails (common ones)
-			availableRoles = [{ name: 'admin' }, { name: 'user' }, { name: 'viewer' }];
+			availableRoles = FALLBACK_ROLES;
 		}
 	}
 
-	onMount(() => {
-		loadRoles();
-	});
+	onMount(loadRoles);
 
 	/** @param {string} roleName */
 	function toggleRole(roleName) {
-		if (selectedRoles.includes(roleName)) {
-			selectedRoles = selectedRoles.filter((r) => r !== roleName);
-		} else {
-			selectedRoles = [...selectedRoles, roleName];
-		}
+		selectedRoles = selectedRoles.includes(roleName)
+			? selectedRoles.filter((r) => r !== roleName)
+			: [...selectedRoles, roleName];
 	}
 
 	/** @param {SubmitEvent} e */
@@ -63,7 +58,8 @@
 				password,
 				roles: selectedRoles
 			});
-			goto('/admin/internal-users');
+			toast.success('Usuario creado correctamente');
+			await goto('/admin/internal-users');
 		} catch (err) {
 			console.error('Failed to create user:', err);
 			error = /** @type {any} */ (err).message || 'Error al crear usuario.';
@@ -73,21 +69,21 @@
 	}
 </script>
 
-<div class="flex flex-col min-h-screen">
-	<Topbar title="Usuarios / Nuevo">
+<div class="flex min-h-screen flex-col">
+	<Topbar title="Usuarios" subtitle="Crear usuario interno" backUrl="/admin/internal-users">
 		<a href="/admin/internal-users">
-			<Button variant="secondary" size="sm">Cancelar</Button>
+			<Button variant="ghost" size="sm">Cancelar</Button>
 		</a>
 	</Topbar>
 
-	<div class="p-8 max-w-2xl mx-auto w-full">
-		<Card class="p-8">
-			<h2 class="text-xl font-semibold mb-6 text-slate-900">Registrar Usuario Interno</h2>
+	<div class="mx-auto w-full max-w-2xl p-6 sm:p-8">
+		<Card class="p-6 sm:p-8">
+			<h2 class="mb-6 text-xl font-semibold text-app">Registrar usuario interno</h2>
 
-			<form onsubmit={handleSubmit} class="space-y-6">
+			<form onsubmit={handleSubmit} class="space-y-5">
 				<Input
 					id="name"
-					label="Nombre Completo"
+					label="Nombre completo"
 					placeholder="Ej: Juan Pérez"
 					bind:value={name}
 					required
@@ -95,10 +91,11 @@
 
 				<Input
 					id="email"
-					label="Correo Electrónico"
+					label="Correo electrónico"
 					type="email"
 					placeholder="usuario@geminislabs.com"
 					bind:value={email}
+					autocomplete="email"
 					required
 				/>
 
@@ -107,48 +104,55 @@
 					label="Contraseña"
 					type="password"
 					placeholder="••••••••"
+					autocomplete="new-password"
 					bind:value={password}
 					required
 				/>
 
 				<div class="space-y-2">
-					<span class="block text-sm font-medium text-slate-700" id="roles-label">Roles</span>
+					<span class="gac-label" id="roles-label">Roles</span>
 					{#if availableRoles.length > 0}
 						<div class="flex flex-wrap gap-2" role="group" aria-labelledby="roles-label">
-							{#each availableRoles as role (typeof role === 'string' ? role : role.role_id || role.name)}
-								{@const roleName = typeof role === 'string' ? role : role.name}
+							{#each availableRoles as role (role.role_id || role.name)}
+								{@const roleName = role.name}
+								{@const active = selectedRoles.includes(roleName)}
 								<button
 									type="button"
-									class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors border {selectedRoles.includes(
-										roleName
-									)
-										? 'bg-blue-100 text-blue-700 border-blue-200'
-										: 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}"
+									class="rounded-full border px-3 py-1.5 text-sm font-medium transition-colors"
+									style={active
+										? 'background-color: var(--color-accent-soft); color: var(--color-accent-primary); border-color: var(--color-accent-primary);'
+										: 'background-color: var(--color-bg-elevated); color: var(--color-text-secondary); border-color: var(--color-border);'}
 									onclick={() => toggleRole(roleName)}
+									aria-pressed={active}
 								>
 									{roleName}
 								</button>
 							{/each}
 						</div>
-						<p class="text-xs text-slate-500 mt-1">Selecciona los roles asignados al usuario.</p>
+						<p class="mt-1 text-xs text-app-muted">
+							Selecciona uno o varios roles que tendrá el usuario.
+						</p>
 					{:else}
-						<p class="text-sm text-slate-500 italic">No hay roles disponibles para seleccionar.</p>
+						<p class="text-sm italic text-app-muted">No hay roles disponibles para seleccionar.</p>
 					{/if}
 				</div>
 
 				{#if error}
-					<div class="p-3 rounded-md bg-red-50 text-red-600 text-sm">
+					<div
+						class="rounded-md border p-3 text-sm"
+						style="background-color: var(--color-danger-bg); color: var(--color-danger); border-color: color-mix(in srgb, var(--color-danger) 30%, transparent)"
+						role="alert"
+					>
 						{error}
 					</div>
 				{/if}
 
-				<div class="flex justify-end pt-4">
+				<div class="flex justify-end gap-3 pt-4">
+					<a href="/admin/internal-users">
+						<Button variant="outline">Cancelar</Button>
+					</a>
 					<Button type="submit" variant="primary" disabled={isLoading}>
-						{#if isLoading}
-							Guardando...
-						{:else}
-							Crear Usuario
-						{/if}
+						{isLoading ? 'Guardando…' : 'Crear usuario'}
 					</Button>
 				</div>
 			</form>

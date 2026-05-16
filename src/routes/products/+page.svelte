@@ -13,19 +13,14 @@
 		isLoading = true;
 		try {
 			const apiProducts = await ProductsService.getAll();
+			const list = apiProducts?.products || apiProducts?.data || [];
 
-			// ProductsService.getAll() returns { products: [...] }
-
-			const list = apiProducts.products || [];
-
-			if (list && list.length > 0) {
+			if (list.length > 0) {
 				products = list.map((/** @type {any} */ p) => ({
 					...p,
-					// Default icon if not specified
 					icon: p.icon || 'Box',
-					// Default status if not specified
-					status: p.status || 'active',
-					href: p.href || '#'
+					status: p.status || (p.is_active ? 'active' : 'inactive'),
+					href: p.href || '/products/catalog'
 				}));
 			} else {
 				products = [];
@@ -38,138 +33,96 @@
 		}
 	}
 
-	onMount(() => {
-		loadProducts();
-	});
+	onMount(loadProducts);
 </script>
 
-<div class="flex flex-col min-h-screen">
+<div class="flex min-h-screen flex-col">
 	<Topbar title="Productos" />
 
-	<div class="p-8">
+	<div class="p-6 sm:p-8">
 		{#if isLoading}
-			<div class="flex justify-center items-center h-64">
-				<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+			<div class="flex h-64 items-center justify-center">
+				<div
+					class="h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"
+					style="border-color: var(--color-accent-primary); border-top-color: transparent"
+					aria-label="Cargando"
+				></div>
 			</div>
+		{:else if products.length === 0}
+			<Card padding>
+				<p class="text-center text-app-muted">No hay productos disponibles.</p>
+			</Card>
 		{:else}
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-				{#each products as product (product.name)}
+			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+				{#each products as product (product.id || product.code)}
 					<Card
-						class="flex flex-col h-full transition-all duration-200 hover:shadow-md {product.status ===
-						'coming_soon'
-							? 'opacity-75'
-							: ''}"
+						hover
+						class="flex h-full flex-col {product.status === 'coming_soon' ? 'opacity-75' : ''}"
 					>
-						<div class="p-6 flex-1 flex flex-col">
-							<div class="flex items-center justify-between mb-4">
+						<div class="flex flex-1 flex-col p-6">
+							<div class="mb-4 flex items-center justify-between">
 								<div
-									class="p-3 rounded-lg {product.status === 'active'
-										? 'bg-blue-50 text-blue-600'
-										: 'bg-slate-100 text-slate-500'}"
+									class="rounded-lg p-3"
+									style={product.status === 'active'
+										? 'background-color: var(--color-accent-soft); color: var(--color-accent-primary)'
+										: 'background-color: var(--color-bg-tertiary); color: var(--color-text-muted)'}
 								>
-									{#if product.icon === 'Smartphone'}
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											width="24"
-											height="24"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path
-												d="M12 18h.01"
-											/></svg
-										>
-									{:else if product.icon === 'Radio'}
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											width="24"
-											height="24"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" /><path
-												d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"
-											/><circle cx="12" cy="12" r="2" /><path
-												d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"
-											/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19" /></svg
-										>
-									{:else if product.icon === 'Wifi'}
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											width="24"
-											height="24"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											><path d="M12 20h.01" /><path d="M2 8.82a15 15 0 0 1 20 0" /><path
-												d="M5 12.859a10 10 0 0 1 14 0"
-											/><path d="M8.5 16.429a5 5 0 0 1 7 0" /></svg
-										>
-									{:else if product.icon === 'SimCard'}
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											width="24"
-											height="24"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											><path
-												d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z"
-											/><path d="M10 11v6" /><path d="M14 11v6" /><path d="M10 14h4" /></svg
-										>
-									{/if}
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="24"
+										height="24"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										aria-hidden="true"
+									>
+										<path
+											d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+										/>
+										<polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+										<line x1="12" y1="22.08" x2="12" y2="12" />
+									</svg>
 								</div>
 								{#if product.status === 'coming_soon'}
-									<span
-										class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800"
-									>
-										Próximamente
-									</span>
+									<span class="gac-badge gac-badge-neutral">Próximamente</span>
+								{:else if !product.is_active}
+									<span class="gac-badge gac-badge-neutral">Inactivo</span>
 								{/if}
 							</div>
 
-							<h3 class="text-lg font-semibold text-slate-900 mb-2">
-								{product.name}
-							</h3>
-							<p class="text-sm text-slate-500 mb-6 flex-1">
-								{product.description}
+							<h3 class="mb-2 text-lg font-semibold text-app">{product.name}</h3>
+							<p class="mb-6 flex-1 text-sm text-app-secondary">
+								{product.description || 'Sin descripción disponible.'}
 							</p>
 
-							{#if product.status === 'active'}
+							{#if product.status === 'active' || product.is_active}
 								<a href={product.href} class="w-full">
-									<Button variant="secondary" class="w-full justify-between group">
-										Entrar al módulo
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											width="16"
-											height="16"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											class="transition-transform group-hover:translate-x-1"
-											><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg
-										>
+									<Button variant="secondary" fullWidth>
+										<span class="flex w-full items-center justify-between">
+											Entrar al módulo
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												width="16"
+												height="16"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												aria-hidden="true"
+											>
+												<path d="M5 12h14" />
+												<path d="m12 5 7 7-7 7" />
+											</svg>
+										</span>
 									</Button>
 								</a>
 							{:else}
-								<Button variant="ghost" disabled class="w-full justify-start cursor-not-allowed">
-									No disponible
-								</Button>
+								<Button variant="ghost" disabled fullWidth>No disponible</Button>
 							{/if}
 						</div>
 					</Card>

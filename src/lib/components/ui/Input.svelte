@@ -1,4 +1,10 @@
 <script>
+	/**
+	 * Input corporativo GAC. Reutiliza `gac-input` y `gac-label` del
+	 * design system, conserva la API (label, id, type, error, etc.)
+	 * para no romper consumidores existentes.
+	 */
+
 	/** @type {{
 	 * 	label?: string,
 	 * 	id?: string,
@@ -7,8 +13,13 @@
 	 * 	value?: string,
 	 * 	error?: string,
 	 * 	required?: boolean,
+	 * 	disabled?: boolean,
+	 * 	autocomplete?: any,
 	 * 	class?: string,
-	 * 	oninput?: (event: Event) => void
+	 * 	inputClass?: string,
+	 * 	oninput?: (event: Event) => void,
+	 * 	onchange?: (event: Event) => void,
+	 * 	onblur?: (event: FocusEvent) => void
 	 * }} */
 	let {
 		label,
@@ -18,30 +29,39 @@
 		value = $bindable(''),
 		error,
 		required = false,
+		disabled = false,
+		autocomplete = undefined,
 		class: className = '',
-		oninput
+		inputClass = '',
+		oninput,
+		onchange,
+		onblur
 	} = $props();
 </script>
 
 <div class="w-full {className}">
 	{#if label}
-		<label for={id} class="block text-sm font-medium text-slate-700 mb-1">
+		<label for={id} class="gac-label">
 			{label}
-			{#if required}<span class="text-red-500">*</span>{/if}
+			{#if required}<span class="text-danger ml-0.5">*</span>{/if}
 		</label>
 	{/if}
 	<input
 		{id}
 		{type}
 		{placeholder}
-		bind:value
 		{required}
+		{disabled}
+		autocomplete={autocomplete ?? null}
+		bind:value
 		{oninput}
-		class="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 {error
-			? 'border-red-500 focus:ring-red-500'
-			: ''}"
+		{onchange}
+		{onblur}
+		aria-invalid={error ? 'true' : undefined}
+		aria-describedby={error && id ? `${id}-error` : undefined}
+		class="gac-input {error ? 'gac-input--error' : ''} {inputClass}"
 	/>
 	{#if error}
-		<p class="mt-1 text-xs text-red-500">{error}</p>
+		<p id={id ? `${id}-error` : undefined} class="mt-1 text-xs text-danger">{error}</p>
 	{/if}
 </div>

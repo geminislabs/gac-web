@@ -57,88 +57,88 @@
 	}
 </script>
 
-<div class="flex flex-col min-h-screen">
+<div class="flex min-h-screen flex-col bg-app text-app">
 	<Topbar
 		title={isLoading ? 'Cargando...' : `Nexus / Cuentas / ${client?.name || 'Desconocido'}`}
 		backUrl="/products/nexus"
 	/>
 
-	<div class="p-8 space-y-6">
-		<!-- Client Info -->
+	<div class="space-y-6 p-8">
 		<Card class="p-6">
-			<h2 class="text-lg font-semibold text-slate-900 mb-4">Información del Cliente</h2>
-			<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+			<h2 class="mb-4 text-lg font-semibold text-app">Información del Cliente</h2>
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
 				<div>
-					<p class="text-sm text-slate-500">Nombre</p>
-					<p class="font-medium">{client?.name || '-'}</p>
+					<p class="text-sm text-app-muted">Nombre</p>
+					<p class="font-medium text-app">{client?.name || '-'}</p>
 				</div>
 				<div>
-					<p class="text-sm text-slate-500">Estatus</p>
+					<p class="text-sm text-app-muted">Estatus</p>
 					<p class="font-medium">
 						<span
-							class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-								${
-									client?.status === 'ACTIVE'
-										? 'bg-green-100 text-green-800'
-										: client?.status === 'PENDING'
-											? 'bg-yellow-100 text-yellow-800'
-											: client?.status === 'SUSPENDED'
-												? 'bg-red-100 text-red-800'
-												: 'bg-slate-100 text-slate-800'
-								}`}
+							class={`gac-badge ${
+								client?.status === 'ACTIVE'
+									? 'gac-badge-success'
+									: client?.status === 'PENDING'
+										? 'gac-badge-warning'
+										: client?.status === 'SUSPENDED'
+											? 'gac-badge-danger'
+											: 'gac-badge-neutral'
+							}`}
 						>
 							{client?.status || '-'}
 						</span>
 					</p>
 				</div>
 				<div>
-					<p class="text-sm text-slate-500">Creado</p>
-					<p class="font-medium">{client?.formattedCreated || '-'}</p>
+					<p class="text-sm text-app-muted">Creado</p>
+					<p class="font-medium text-app">{client?.formattedCreated || '-'}</p>
 				</div>
 				<div>
-					<p class="text-sm text-slate-500">Subscription ID</p>
-					<p class="font-medium text-xs font-mono">
+					<p class="text-sm text-app-muted">Subscription ID</p>
+					<p class="font-mono text-xs font-medium text-app">
 						{client?.active_subscription_id || 'Sin suscripción'}
 					</p>
 				</div>
 			</div>
 		</Card>
 
-		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-			<!-- Devices List -->
-			<Card class="overflow-hidden h-full">
-				<div class="p-4 border-b border-slate-100 flex justify-between items-center">
-					<h3 class="font-semibold text-slate-900">Dispositivos Asignados</h3>
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+			<Card class="h-full overflow-hidden">
+				<div
+					class="flex items-center justify-between p-4"
+					style="border-bottom: 1px solid var(--color-border)"
+				>
+					<h3 class="font-semibold text-app">Dispositivos Asignados</h3>
 					<Button variant="outline" size="sm" onclick={handleAddDevice}>Asignar Dispositivo</Button>
 				</div>
 				<div class="overflow-x-auto">
-					<table class="w-full text-sm text-left">
-						<thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+					<table class="gac-table">
+						<thead>
 							<tr>
-								<th class="px-4 py-3">Device ID</th>
-								<th class="px-4 py-3">Marca</th>
-								<th class="px-4 py-3">Modelo</th>
+								<th>Device ID</th>
+								<th>Marca</th>
+								<th>Modelo</th>
 							</tr>
 						</thead>
-						<tbody class="divide-y divide-slate-100">
+						<tbody>
 							{#if devices.length === 0}
 								<tr>
-									<td colspan="3" class="px-4 py-6 text-center text-slate-500">
+									<td colspan="3" class="px-4 py-6 text-center text-app-muted">
 										Sin dispositivos asignados.
 									</td>
 								</tr>
 							{:else}
 								{#each devices as device (device.device_id)}
 									<tr
-										class="cursor-pointer hover:bg-slate-50 transition-colors"
+										class="cursor-pointer"
 										onclick={async () =>
 											await goto(`/products/nexus/devices?device_id=${device.device_id}`)}
 									>
-										<td class="px-4 py-3 font-medium text-blue-600 hover:text-blue-800"
-											>{device.device_id}</td
-										>
-										<td class="px-4 py-3">{device.brand}</td>
-										<td class="px-4 py-3">{device.model}</td>
+										<td class="font-medium" style="color: var(--color-accent)">
+											{device.device_id}
+										</td>
+										<td>{device.brand}</td>
+										<td>{device.model}</td>
 									</tr>
 								{/each}
 							{/if}
@@ -147,35 +147,34 @@
 				</div>
 			</Card>
 
-			<!-- Units List -->
-			<Card class="overflow-hidden h-full">
-				<div class="p-4 border-b border-slate-100">
-					<h3 class="font-semibold text-slate-900">Unidades</h3>
+			<Card class="h-full overflow-hidden">
+				<div class="p-4" style="border-bottom: 1px solid var(--color-border)">
+					<h3 class="font-semibold text-app">Unidades</h3>
 				</div>
 				<div class="overflow-x-auto">
-					<table class="w-full text-sm text-left">
-						<thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+					<table class="gac-table">
+						<thead>
 							<tr>
-								<th class="px-4 py-3">Nombre</th>
-								<th class="px-4 py-3">Placas</th>
-								<th class="px-4 py-3">Vehículo</th>
-								<th class="px-4 py-3">Dispositivo</th>
+								<th>Nombre</th>
+								<th>Placas</th>
+								<th>Vehículo</th>
+								<th>Dispositivo</th>
 							</tr>
 						</thead>
-						<tbody class="divide-y divide-slate-100">
+						<tbody>
 							{#if units.length === 0}
 								<tr>
-									<td colspan="4" class="px-4 py-6 text-center text-slate-500">
+									<td colspan="4" class="px-4 py-6 text-center text-app-muted">
 										Sin unidades registradas.
 									</td>
 								</tr>
 							{:else}
 								{#each units as unit (unit.name)}
 									<tr>
-										<td class="px-4 py-3 font-medium">{unit.name}</td>
-										<td class="px-4 py-3">{unit.plate}</td>
-										<td class="px-4 py-3">{unit.brand} {unit.model}</td>
-										<td class="px-4 py-3 text-slate-500">{unit.device}</td>
+										<td class="font-medium text-app">{unit.name}</td>
+										<td>{unit.plate}</td>
+										<td>{unit.brand} {unit.model}</td>
+										<td class="text-app-muted">{unit.device}</td>
 									</tr>
 								{/each}
 							{/if}

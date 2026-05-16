@@ -1,5 +1,8 @@
 <script>
 	/**
+	 * Botón corporativo GAC. Reutiliza los tokens del design system
+	 * (variables CSS por tema) y soporta variantes / tamaños comunes.
+	 *
 	 * @typedef {'primary' | 'secondary' | 'danger' | 'ghost' | 'outline'} Variant
 	 * @typedef {'sm' | 'md' | 'lg'} Size
 	 */
@@ -9,7 +12,10 @@
 	 * 	size?: Size,
 	 * 	type?: 'button' | 'submit' | 'reset',
 	 * 	disabled?: boolean,
+	 * 	fullWidth?: boolean,
 	 * 	class?: string,
+	 * 	title?: string,
+	 * 	ariaLabel?: string,
 	 * 	children?: import('svelte').Snippet,
 	 * 	onclick?: (event: MouseEvent) => void
 	 * }} */
@@ -18,33 +24,35 @@
 		size = 'md',
 		type = 'button',
 		disabled = false,
+		fullWidth = false,
 		class: className = '',
+		title,
+		ariaLabel,
 		children,
 		onclick
 	} = $props();
 
-	const baseStyles =
-		'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-white';
-
-	const variants = {
-		primary: 'bg-slate-900 text-white hover:bg-slate-800 focus-visible:ring-slate-900',
-		secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200 focus-visible:ring-slate-500',
-		danger: 'bg-red-500 text-white hover:bg-red-600 focus-visible:ring-red-500',
-		ghost: 'hover:bg-slate-100 hover:text-slate-900',
-		outline: 'border border-slate-200 bg-transparent hover:bg-slate-100 text-slate-900'
+	const variantClass = {
+		primary: 'gac-btn-primary',
+		secondary: 'gac-btn-secondary',
+		danger: 'gac-btn-danger',
+		ghost: 'gac-btn-ghost',
+		outline: 'gac-btn-outline'
 	};
 
-	const sizes = {
-		sm: 'h-9 px-3 text-xs',
-		md: 'h-10 px-4 py-2 text-sm',
-		lg: 'h-11 px-8 text-base'
+	const sizeClass = {
+		sm: 'gac-btn-sm',
+		md: '',
+		lg: 'gac-btn-lg'
 	};
 </script>
 
 <button
 	{type}
-	class="{baseStyles} {variants[variant]} {sizes[size]} {className}"
 	{disabled}
+	{title}
+	aria-label={ariaLabel}
+	class="gac-btn {variantClass[variant]} {sizeClass[size]} {fullWidth ? 'w-full' : ''} {className}"
 	{onclick}
 >
 	{@render children?.()}
