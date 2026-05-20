@@ -8,6 +8,12 @@
 	import '$lib/stores/theme';
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';
 	import Toast from '$lib/components/ui/Toast.svelte';
+	import {
+		canAccessNexus,
+		canManageInternalUsers,
+		pathRequiresAdmin,
+		pathRequiresNexusAccess
+	} from '$lib/utils/roles';
 
 	let { children } = $props();
 
@@ -18,7 +24,20 @@
 		const unsubscribe = auth.subscribe(async (state) => {
 			if (!state.isAuthenticated && !isLoginPage) {
 				await goto('/login');
-			} else if (state.isAuthenticated && isLoginPage) {
+				return;
+			}
+			if (state.isAuthenticated && isLoginPage) {
+				await goto('/');
+				return;
+			}
+			if (!state.isAuthenticated || isLoginPage) return;
+
+			const path = $page.url.pathname;
+			if (pathRequiresAdmin(path) && !canManageInternalUsers(state.user)) {
+				await goto('/');
+				return;
+			}
+			if (pathRequiresNexusAccess(path) && !canAccessNexus(state.user)) {
 				await goto('/');
 			}
 		});

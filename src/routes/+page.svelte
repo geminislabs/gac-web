@@ -4,6 +4,8 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import { onMount } from 'svelte';
 	import { ClientsService } from '$lib/services/clients';
+	import { auth } from '$lib/stores/auth';
+	import { canAccessNexus, canManageInternalUsers } from '$lib/utils/roles';
 
 	let currentDate = $state(new Date());
 	let nexusDeviceCount = $state(0);
@@ -11,12 +13,18 @@
 	let userCount = $state(0);
 	let statsError = $state(false);
 
+	let showNexus = $derived(canAccessNexus($auth.user));
+	let showAdmin = $derived(canManageInternalUsers($auth.user));
+
 	onMount(() => {
 		const interval = setInterval(() => {
 			currentDate = new Date();
 		}, 1000);
 
 		(async () => {
+			if (!canAccessNexus($auth.user)) {
+				return;
+			}
 			try {
 				const clientStats = await ClientsService.getStats();
 				nexusDeviceCount = clientStats?.devices?.total ?? 0;
@@ -74,72 +82,79 @@
 
 		<!-- Stats -->
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-			<Card hover padding class="border-l-4" style="border-left-color: var(--color-accent-primary)">
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="mb-1 text-xs font-medium uppercase tracking-wide text-app-muted">
-							Clientes registrados
-						</p>
-						<h3 class="text-2xl font-bold text-app">{nexusClientCount}</h3>
-						<p class="mt-1 text-xs text-app-muted">Total activos</p>
-					</div>
-					<div
-						class="rounded-lg p-3 text-accent"
-						style="background-color: var(--color-accent-soft)"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="22"
-							height="22"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
+			{#if showNexus}
+				<Card
+					hover
+					padding
+					class="border-l-4"
+					style="border-left-color: var(--color-accent-primary)"
+				>
+					<div class="flex items-center justify-between">
+						<div>
+							<p class="mb-1 text-xs font-medium uppercase tracking-wide text-app-muted">
+								Clientes registrados
+							</p>
+							<h3 class="text-2xl font-bold text-app">{nexusClientCount}</h3>
+							<p class="mt-1 text-xs text-app-muted">Total activos</p>
+						</div>
+						<div
+							class="rounded-lg p-3 text-accent"
+							style="background-color: var(--color-accent-soft)"
 						>
-							<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-							<circle cx="9" cy="7" r="4" />
-							<path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-							<path d="M16 3.13a4 4 0 0 1 0 7.75" />
-						</svg>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="22"
+								height="22"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+								<circle cx="9" cy="7" r="4" />
+								<path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+								<path d="M16 3.13a4 4 0 0 1 0 7.75" />
+							</svg>
+						</div>
 					</div>
-				</div>
-			</Card>
+				</Card>
 
-			<Card hover padding class="border-l-4" style="border-left-color: var(--color-info)">
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="mb-1 text-xs font-medium uppercase tracking-wide text-app-muted">
-							Dispositivos Nexus
-						</p>
-						<h3 class="text-2xl font-bold text-app">{nexusDeviceCount}</h3>
-						<p class="mt-1 text-xs text-app-muted">Inventario total</p>
-					</div>
-					<div
-						class="rounded-lg p-3"
-						style="background-color: var(--color-info-bg); color: var(--color-info)"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="22"
-							height="22"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
+				<Card hover padding class="border-l-4" style="border-left-color: var(--color-info)">
+					<div class="flex items-center justify-between">
+						<div>
+							<p class="mb-1 text-xs font-medium uppercase tracking-wide text-app-muted">
+								Dispositivos Nexus
+							</p>
+							<h3 class="text-2xl font-bold text-app">{nexusDeviceCount}</h3>
+							<p class="mt-1 text-xs text-app-muted">Inventario total</p>
+						</div>
+						<div
+							class="rounded-lg p-3"
+							style="background-color: var(--color-info-bg); color: var(--color-info)"
 						>
-							<rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-							<line x1="8" y1="21" x2="16" y2="21"></line>
-							<line x1="12" y1="17" x2="12" y2="21"></line>
-						</svg>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="22"
+								height="22"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+								<line x1="8" y1="21" x2="16" y2="21"></line>
+								<line x1="12" y1="17" x2="12" y2="21"></line>
+							</svg>
+						</div>
 					</div>
-				</div>
-			</Card>
+				</Card>
+			{/if}
 
 			<Card hover padding class="border-l-4" style="border-left-color: var(--color-success)">
 				<div class="flex items-center justify-between">
@@ -173,47 +188,49 @@
 				</div>
 			</Card>
 
-			<Card
-				hover
-				padding
-				class="border-l-4"
-				style="border-left-color: var(--color-accent-secondary)"
-			>
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="mb-1 text-xs font-medium uppercase tracking-wide text-app-muted">
-							Usuarios internos
-						</p>
-						<h3 class="text-2xl font-bold text-app">{userCount}</h3>
-						<p class="mt-1 text-xs text-app-muted">Administradores activos</p>
-					</div>
-					<div
-						class="rounded-lg p-3"
-						style="background-color: var(--color-accent-soft); color: var(--color-accent-secondary)"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="22"
-							height="22"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
+			{#if showAdmin}
+				<Card
+					hover
+					padding
+					class="border-l-4"
+					style="border-left-color: var(--color-accent-secondary)"
+				>
+					<div class="flex items-center justify-between">
+						<div>
+							<p class="mb-1 text-xs font-medium uppercase tracking-wide text-app-muted">
+								Usuarios internos
+							</p>
+							<h3 class="text-2xl font-bold text-app">{userCount}</h3>
+							<p class="mt-1 text-xs text-app-muted">Administradores activos</p>
+						</div>
+						<div
+							class="rounded-lg p-3"
+							style="background-color: var(--color-accent-soft); color: var(--color-accent-secondary)"
 						>
-							<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-							<circle cx="9" cy="7" r="4"></circle>
-							<path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-							<path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-						</svg>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="22"
+								height="22"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+								<circle cx="9" cy="7" r="4"></circle>
+								<path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+								<path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+							</svg>
+						</div>
 					</div>
-				</div>
-			</Card>
+				</Card>
+			{/if}
 		</div>
 
-		{#if statsError}
+		{#if statsError && showNexus}
 			<div
 				class="gac-panel-solid border-l-4 p-4 text-sm text-app-secondary"
 				style="border-left-color: var(--color-warning); background-color: var(--color-warning-bg)"
@@ -229,150 +246,156 @@
 			<div class="space-y-4 lg:col-span-2">
 				<h2 class="text-base font-semibold text-app">Accesos directos</h2>
 				<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-					<Card hover class="group cursor-pointer overflow-hidden">
-						<div class="p-6">
-							<div class="mb-4 flex items-center">
-								<div
-									class="mr-3 rounded-lg p-2"
-									style="background-color: var(--color-accent-soft); color: var(--color-accent-primary)"
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="20"
-										height="20"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										aria-hidden="true"
+					{#if showNexus}
+						<Card hover class="group cursor-pointer overflow-hidden">
+							<div class="p-6">
+								<div class="mb-4 flex items-center">
+									<div
+										class="mr-3 rounded-lg p-2"
+										style="background-color: var(--color-accent-soft); color: var(--color-accent-primary)"
 									>
-										<rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-										<line x1="8" y1="21" x2="16" y2="21"></line>
-										<line x1="12" y1="17" x2="12" y2="21"></line>
-									</svg>
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											width="20"
+											height="20"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+										>
+											<rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+											<line x1="8" y1="21" x2="16" y2="21"></line>
+											<line x1="12" y1="17" x2="12" y2="21"></line>
+										</svg>
+									</div>
+									<h3 class="text-lg font-bold text-app">Nexus</h3>
 								</div>
-								<h3 class="text-lg font-bold text-app">Nexus</h3>
+								<p class="mb-6 text-sm text-app-secondary">
+									Gestión de dispositivos GPS, telemática avanzada y rastreo en tiempo real.
+								</p>
+								<a href="/products/nexus/devices" class="block w-full">
+									<Button variant="primary" fullWidth>Gestionar Dispositivos</Button>
+								</a>
 							</div>
-							<p class="mb-6 text-sm text-app-secondary">
-								Gestión de dispositivos GPS, telemática avanzada y rastreo en tiempo real.
-							</p>
-							<a href="/products/nexus/devices" class="block w-full">
-								<Button variant="primary" fullWidth>Gestionar Dispositivos</Button>
-							</a>
-						</div>
-					</Card>
+						</Card>
+					{/if}
 
-					<Card hover class="group cursor-pointer overflow-hidden">
-						<div class="p-6">
-							<div class="mb-4 flex items-center">
-								<div
-									class="mr-3 rounded-lg p-2"
-									style="background-color: var(--color-accent-soft); color: var(--color-accent-secondary)"
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="20"
-										height="20"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										aria-hidden="true"
+					{#if showAdmin}
+						<Card hover class="group cursor-pointer overflow-hidden">
+							<div class="p-6">
+								<div class="mb-4 flex items-center">
+									<div
+										class="mr-3 rounded-lg p-2"
+										style="background-color: var(--color-accent-soft); color: var(--color-accent-secondary)"
 									>
-										<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-										<circle cx="9" cy="7" r="4"></circle>
-										<path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-										<path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-									</svg>
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											width="20"
+											height="20"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+										>
+											<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+											<circle cx="9" cy="7" r="4"></circle>
+											<path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+											<path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+										</svg>
+									</div>
+									<h3 class="text-lg font-bold text-app">Usuarios y roles</h3>
 								</div>
-								<h3 class="text-lg font-bold text-app">Usuarios y roles</h3>
+								<p class="mb-6 text-sm text-app-secondary">
+									Administración de cuentas internas, permisos y auditoría de seguridad.
+								</p>
+								<a href="/admin/internal-users" class="block w-full">
+									<Button variant="outline" fullWidth>Ver usuarios</Button>
+								</a>
 							</div>
-							<p class="mb-6 text-sm text-app-secondary">
-								Administración de cuentas internas, permisos y auditoría de seguridad.
-							</p>
-							<a href="/admin/internal-users" class="block w-full">
-								<Button variant="outline" fullWidth>Ver usuarios</Button>
-							</a>
-						</div>
-					</Card>
+						</Card>
+					{/if}
 
-					<Card hover class="group cursor-pointer overflow-hidden">
-						<div class="p-6">
-							<div class="mb-4 flex items-center">
-								<div
-									class="mr-3 rounded-lg p-2"
-									style="background-color: var(--color-success-bg); color: var(--color-success)"
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="20"
-										height="20"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										aria-hidden="true"
+					{#if showNexus}
+						<Card hover class="group cursor-pointer overflow-hidden">
+							<div class="p-6">
+								<div class="mb-4 flex items-center">
+									<div
+										class="mr-3 rounded-lg p-2"
+										style="background-color: var(--color-success-bg); color: var(--color-success)"
 									>
-										<path
-											d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"
-										/>
-										<path d="M7 7h.01" />
-									</svg>
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											width="20"
+											height="20"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+										>
+											<path
+												d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"
+											/>
+											<path d="M7 7h.01" />
+										</svg>
+									</div>
+									<h3 class="text-lg font-bold text-app">Planes de servicio</h3>
 								</div>
-								<h3 class="text-lg font-bold text-app">Planes de servicio</h3>
+								<p class="mb-6 text-sm text-app-secondary">
+									Definición de paquetes, pricing, capacidades y límites para los productos.
+								</p>
+								<a href="/products/plans" class="block w-full">
+									<Button variant="outline" fullWidth>Gestionar planes</Button>
+								</a>
 							</div>
-							<p class="mb-6 text-sm text-app-secondary">
-								Definición de paquetes, pricing, capacidades y límites para los productos.
-							</p>
-							<a href="/products/plans" class="block w-full">
-								<Button variant="outline" fullWidth>Gestionar planes</Button>
-							</a>
-						</div>
-					</Card>
+						</Card>
 
-					<Card hover class="group cursor-pointer overflow-hidden">
-						<div class="p-6">
-							<div class="mb-4 flex items-center">
-								<div
-									class="mr-3 rounded-lg p-2"
-									style="background-color: var(--color-info-bg); color: var(--color-info)"
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="20"
-										height="20"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										aria-hidden="true"
+						<Card hover class="group cursor-pointer overflow-hidden">
+							<div class="p-6">
+								<div class="mb-4 flex items-center">
+									<div
+										class="mr-3 rounded-lg p-2"
+										style="background-color: var(--color-info-bg); color: var(--color-info)"
 									>
-										<path d="m7.5 4.27 9 5.15" />
-										<path
-											d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
-										/>
-										<path d="m3.3 7 8.7 5 8.7-5" />
-										<path d="M12 22V12" />
-									</svg>
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											width="20"
+											height="20"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+										>
+											<path d="m7.5 4.27 9 5.15" />
+											<path
+												d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
+											/>
+											<path d="m3.3 7 8.7 5 8.7-5" />
+											<path d="M12 22V12" />
+										</svg>
+									</div>
+									<h3 class="text-lg font-bold text-app">Catálogo</h3>
 								</div>
-								<h3 class="text-lg font-bold text-app">Catálogo</h3>
+								<p class="mb-6 text-sm text-app-secondary">
+									Productos disponibles y su configuración comercial dentro de la plataforma.
+								</p>
+								<a href="/products/catalog" class="block w-full">
+									<Button variant="outline" fullWidth>Abrir catálogo</Button>
+								</a>
 							</div>
-							<p class="mb-6 text-sm text-app-secondary">
-								Productos disponibles y su configuración comercial dentro de la plataforma.
-							</p>
-							<a href="/products/catalog" class="block w-full">
-								<Button variant="outline" fullWidth>Abrir catálogo</Button>
-							</a>
-						</div>
-					</Card>
+						</Card>
+					{/if}
 
 					<Card hover class="group cursor-pointer overflow-hidden">
 						<div class="p-6">

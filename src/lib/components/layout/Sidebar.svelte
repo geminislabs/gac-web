@@ -1,25 +1,46 @@
 <script>
 	import { page } from '$app/stores';
 	import { auth, logout } from '$lib/stores/auth';
+	import { canAccessNexus, canManageInternalUsers } from '$lib/utils/roles';
 
 	/** @type {{ isCollapsed?: boolean }} */
 	let { isCollapsed = $bindable(false) } = $props();
 
 	/**
-	 * @typedef {{ href: string, label: string, icon: string, section?: 'main' | 'commerce' | 'admin' }} MenuItem
+	 * @typedef {{ href: string, label: string, icon: string, section?: 'main' | 'commerce' | 'admin', nexus?: boolean, adminOnly?: boolean }} MenuItem
 	 */
 
 	/** @type {MenuItem[]} */
 	const menuItems = [
 		{ href: '/', label: 'Dashboard', icon: 'LayoutDashboard', section: 'main' },
-		{ href: '/products/catalog', label: 'Productos', icon: 'Package', section: 'main' },
-		{ href: '/products/nexus', label: 'Nexus', icon: 'Smartphone', section: 'main' },
-		{ href: '/products/plans', label: 'Planes', icon: 'Tag', section: 'main' },
+		{
+			href: '/products/catalog',
+			label: 'Productos',
+			icon: 'Package',
+			section: 'main',
+			nexus: true
+		},
+		{ href: '/products/nexus', label: 'Nexus', icon: 'Smartphone', section: 'main', nexus: true },
+		{ href: '/products/plans', label: 'Planes', icon: 'Tag', section: 'main', nexus: true },
 		{ href: '/admin/orders', label: 'Órdenes', icon: 'ShoppingCart', section: 'commerce' },
 		{ href: '/admin/payments', label: 'Pagos', icon: 'CreditCard', section: 'commerce' },
 		{ href: '/admin/shipments', label: 'Envíos', icon: 'Truck', section: 'commerce' },
-		{ href: '/admin/internal-users', label: 'Usuarios Internos', icon: 'Users', section: 'admin' }
+		{
+			href: '/admin/internal-users',
+			label: 'Usuarios Internos',
+			icon: 'Users',
+			section: 'admin',
+			adminOnly: true
+		}
 	];
+
+	let visibleMenuItems = $derived(
+		menuItems.filter((item) => {
+			if (item.adminOnly) return canManageInternalUsers($auth.user);
+			if (item.nexus) return canAccessNexus($auth.user);
+			return true;
+		})
+	);
 
 	let userInitial = $derived(
 		($auth.user?.full_name || $auth.user?.name || $auth.user?.email || 'U').charAt(0).toUpperCase()
@@ -89,7 +110,7 @@
 
 	<!-- NAV -->
 	<nav class="mt-2 flex-1 space-y-1 overflow-y-auto p-3" aria-label="Navegación principal">
-		{#each menuItems as item, index (item.href)}
+		{#each visibleMenuItems as item, index (item.href)}
 			<a
 				href={item.href}
 				title={isCollapsed ? item.label : undefined}
@@ -262,7 +283,7 @@
 				{/if}
 			</a>
 
-			{#if index < menuItems.length - 1 && menuItems[index + 1].section !== item.section}
+			{#if index < visibleMenuItems.length - 1 && visibleMenuItems[index + 1].section !== item.section}
 				<hr class="gac-divider my-3" />
 			{/if}
 		{/each}

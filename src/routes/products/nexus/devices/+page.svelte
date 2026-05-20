@@ -471,7 +471,9 @@
 							{#each filteredDevices as device (device.device_id)}
 								<tr
 									class="cursor-pointer"
-									class:bg-white={selectedDeviceId === device.device_id}
+									style={selectedDeviceId === device.device_id
+										? 'background-color: var(--color-accent-soft)'
+										: ''}
 									onclick={() => (selectedDeviceId = device.device_id)}
 								>
 									<td>{device.device_id}</td>

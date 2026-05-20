@@ -5,6 +5,7 @@ import {
 	PUBLIC_SISCOM_ADMIN_API_URL,
 	PUBLIC_SISCOM_API_URL
 } from '$env/static/public';
+import { formatApiErrorMessage } from '$lib/utils/apiErrors';
 
 /** @type {import('svelte/store').Writable<any>|null} */
 let authStore = null;
@@ -88,7 +89,9 @@ export async function api(endpoint, options = {}) {
 
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}));
-			throw new Error(errorData.message || `API Error: ${response.statusText}`);
+			throw new Error(
+				formatApiErrorMessage(errorData, `API Error: ${response.status} ${response.statusText}`)
+			);
 		}
 
 		if (response.status === 204) return null;
@@ -151,10 +154,12 @@ export async function internalApi(endpoint, options = {}) {
 
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}));
-			const msg =
-				errorData.message ||
-				`Internal API Error [${service}]: ${response.status} ${response.statusText}`;
-			throw new Error(msg);
+			throw new Error(
+				formatApiErrorMessage(
+					errorData,
+					`Internal API Error [${service}]: ${response.status} ${response.statusText}`
+				)
+			);
 		}
 
 		if (response.status === 204) return null;
@@ -241,7 +246,7 @@ export async function getInternalToken(serviceContext = 'nexus') {
 
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}));
-			throw new Error(errorData.message || `Auth API Error: ${response.statusText}`);
+			throw new Error(formatApiErrorMessage(errorData, `Auth API Error: ${response.statusText}`));
 		}
 
 		const json = await response.json();
