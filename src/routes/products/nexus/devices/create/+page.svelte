@@ -5,6 +5,9 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import { goto } from '$app/navigation';
 	import { DevicesService } from '$lib/services/devices';
+	import { canWriteNexus } from '$lib/utils/roles';
+	import { auth } from '$lib/stores/auth';
+	import { onMount } from 'svelte';
 
 	let deviceId = $state('');
 	let brand = $state('');
@@ -18,28 +21,49 @@
 	let isLoading = $state(false);
 	let errorMessage = $state('');
 
+	onMount(() => {
+		if (!$auth.isAuthenticated || !canWriteNexus($auth.user)) {
+			goto('/');
+		}
+	});
+
 	/** @param {SubmitEvent} e */
 	async function handleSubmit(e) {
 		e.preventDefault();
 		isLoading = true;
 		errorMessage = '';
 
+		const trimmedDeviceId = deviceId.trim();
+		if (trimmedDeviceId.length < 10) {
+			errorMessage = 'Device ID debe tener al menos 10 caracteres.';
+			isLoading = false;
+			return;
+		}
+		const trimmedIccid = iccid.trim();
+		if (trimmedIccid && (trimmedIccid.length < 18 || trimmedIccid.length > 22)) {
+			errorMessage = 'ICCID debe tener entre 18 y 22 caracteres.';
+			isLoading = false;
+			return;
+		}
+
+		/** @type {Record<string, unknown>} */
 		const payload = {
-			device_id: deviceId,
-			brand,
-			model,
-			firmware_version: firmwareVersion,
-			notes,
-			iccid: iccid || undefined,
-			carrier,
-			sim_profile:
-				carrier === 'KORE'
-					? {
-							kore_sim_id: koreSimId,
-							kore_account_id: koreAccountId
-						}
-					: undefined
+			device_id: trimmedDeviceId,
+			brand: brand.trim(),
+			model: model.trim(),
+			firmware_version: firmwareVersion.trim() || undefined,
+			notes: notes.trim() || undefined,
+			iccid: trimmedIccid || undefined,
+			carrier
 		};
+
+		const koreId = koreSimId.trim();
+		if (carrier === 'KORE' && koreId) {
+			payload.sim_profile = {
+				kore_sim_id: koreId,
+				...(koreAccountId.trim() ? { kore_account_id: koreAccountId.trim() } : {})
+			};
+		}
 
 		try {
 			await DevicesService.create(payload);
