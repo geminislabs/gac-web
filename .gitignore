@@ -25,3 +25,5 @@ vite.config.ts.timestamp-*
 .npmrc
 .idea
 .qodo
+
+graphify*
