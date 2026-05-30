@@ -11,8 +11,8 @@
 
 	import { onMount, onDestroy } from 'svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-
-	import { Loader } from '@googlemaps/js-api-loader';
+	import { browser } from '$app/environment';
+	import { goto } from '$app/navigation';
 
 	/** @type {import('$lib/services/devices').Device[]} */
 	let devices = $state([]);
@@ -82,7 +82,7 @@
 
 		if (deviceIdParam) {
 			const deviceExists = devices.some((d) => d.device_id === deviceIdParam);
-			if (deviceExists) selectedDeviceId = deviceIdParam;
+			if (deviceExists) selectDevice(deviceIdParam);
 		}
 
 		window.addEventListener('mousemove', handleResize);
@@ -90,8 +90,10 @@
 	});
 
 	onDestroy(() => {
-		window.removeEventListener('mousemove', handleResize);
-		window.removeEventListener('mouseup', stopResize);
+		if (browser) {
+			window.removeEventListener('mousemove', handleResize);
+			window.removeEventListener('mouseup', stopResize);
+		}
 		cleanupStream();
 		clearAllMarkers();
 	});
@@ -190,6 +192,7 @@
 		try {
 			mapInitialized = true;
 
+			const { Loader } = await import('@googlemaps/js-api-loader');
 			const loader = new Loader({
 				apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
 				version: 'weekly',
@@ -409,6 +412,12 @@
 		isDragging = false;
 	}
 
+	/** @param {string} deviceId */
+	function selectDevice(deviceId) {
+		selectedDeviceId = deviceId;
+		selectedDevicesForAssignment = [deviceId];
+	}
+
 	// ──────────────────────────────────────────────
 	// Derived
 	// ──────────────────────────────────────────────
@@ -443,9 +452,20 @@
 					<Input placeholder="Buscar..." bind:value={searchTerm} />
 				</div>
 
-				<Button variant="ghost" size="sm" onclick={loadDevices} disabled={isLoading} class="ml-2">
-					Actualizar
-				</Button>
+				<div class="flex gap-2">
+					{#if selectedDeviceId}
+						<Button
+							variant="primary"
+							size="sm"
+							onclick={() => goto(`/products/nexus/devices/${selectedDeviceId}`)}
+						>
+							Editar Dispositivo
+						</Button>
+					{/if}
+					<Button variant="ghost" size="sm" onclick={loadDevices} disabled={isLoading}>
+						Actualizar
+					</Button>
+				</div>
 			</div>
 
 			<div class="flex-1 overflow-y-auto">
@@ -474,7 +494,7 @@
 									style={selectedDeviceId === device.device_id
 										? 'background-color: var(--color-accent-soft)'
 										: ''}
-									onclick={() => (selectedDeviceId = device.device_id)}
+									onclick={() => selectDevice(device.device_id)}
 								>
 									<td>{device.device_id}</td>
 									<td>{device.brand}</td>
