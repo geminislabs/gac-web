@@ -40,9 +40,7 @@
 	let showUnassignConfirm = $state(false);
 
 	// Indicador de si hay cambios de SIM pendientes
-	let hasSimChanges = $derived(
-		pendingSimToAssign !== null || pendingUnassign
-	);
+	let hasSimChanges = $derived(pendingSimToAssign !== null || pendingUnassign);
 
 	onMount(async () => {
 		/** @type {{id: string}} */
@@ -199,13 +197,13 @@
 		// Marcar como pendiente de desasignar
 		pendingUnassign = true;
 		pendingSimToAssign = null;
-		
+
 		// Limpiar campos de SIM localmente
 		iccid = '';
 		carrier = 'KORE';
 		koreSimId = '';
 		koreAccountId = '';
-		
+
 		showUnassignConfirm = false;
 		successMessage = 'SIM marcada para desasignar. Haz clic en "Guardar" para confirmar.';
 	}
@@ -289,7 +287,13 @@
 						<div class="col-span-2">
 							<div class="flex items-end gap-3">
 								<div class="flex-1">
-									<Input id="iccid" label="ICCID (SIM)" placeholder="89340..." bind:value={iccid} disabled={!!iccid} />
+									<Input
+										id="iccid"
+										label="ICCID (SIM)"
+										placeholder="89340..."
+										bind:value={iccid}
+										disabled={!!iccid}
+									/>
 								</div>
 								{#if !iccid}
 									<Button
@@ -301,11 +305,7 @@
 										{isLoadingSims ? 'Cargando...' : 'Buscar SIM de KORE'}
 									</Button>
 								{:else}
-									<Button
-										variant="danger"
-										type="button"
-										onclick={requestUnassign}
-									>
+									<Button variant="danger" type="button" onclick={requestUnassign}>
 										Cambiar SIM
 									</Button>
 								{/if}
@@ -415,7 +415,9 @@
 				{:else if availableSims.length === 0}
 					<div class="py-8 text-center">
 						<p class="text-app-muted">No hay SIMs disponibles sin asignar.</p>
-						<p class="mt-2 text-sm text-app-muted">Usa el botón "Actualizar desde KORE" para sincronizar.</p>
+						<p class="mt-2 text-sm text-app-muted">
+							Usa el botón "Actualizar desde KORE" para sincronizar.
+						</p>
 					</div>
 				{:else}
 					<div class="space-y-2">
@@ -483,9 +485,7 @@
 			</p>
 			<div class="flex justify-end gap-3">
 				<Button variant="ghost" type="button" onclick={cancelUnassign}>Cancelar</Button>
-				<Button variant="danger" type="button" onclick={confirmUnassign}>
-					Sí, desasignar
-				</Button>
+				<Button variant="danger" type="button" onclick={confirmUnassign}>Sí, desasignar</Button>
 			</div>
 		</div>
 	</div>
