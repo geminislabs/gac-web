@@ -10,6 +10,14 @@ import { internalApi } from '$lib/services/api';
  * @property {number} [total_users]
  * @property {number} [total_organizations]
  * @property {string} [active_subscription_id]
+ * @property {'active' | 'inactive'} [nexus_service_status]
+ * @property {string} [active_plan_name]
+ * @property {string} [active_plan_code]
+ * @property {string} [active_organization_id]
+ * @property {string} [active_organization_name]
+ * @property {string} [billing_cycle]
+ * @property {number} [active_units]
+ * @property {string} [expires_at]
  * @property {string} created_at
  * @property {string} [updated_at]
  */
