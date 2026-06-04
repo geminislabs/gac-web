@@ -4,6 +4,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import { ClientsService } from '$lib/services/clients';
+	import { nexusServiceBadge, nexusServiceDetailLine } from '$lib/utils/nexusStatus';
 	import { onMount } from 'svelte';
 
 	/** @type {any[]} */
@@ -45,6 +46,9 @@
 				billingEmail: account.billing_email,
 				ownerEmail: account.owner_email,
 				status: account.status,
+				nexusServiceStatus: account.nexus_service_status,
+				nexusDetail: nexusServiceDetailLine(account),
+				nexusBadge: nexusServiceBadge(account.nexus_service_status),
 				totalUsers: account.total_users || 0,
 				totalOrganizations: account.total_organizations || 0,
 				formattedCreated: new Date(account.created_at).toLocaleDateString(),
@@ -175,7 +179,8 @@
 						<tr>
 							<th>Nombre</th>
 							<th>Billing Email</th>
-							<th>Estatus</th>
+							<th>Estatus cuenta</th>
+							<th>Servicio Nexus</th>
 							<th>Creado</th>
 							<th>Actualizado</th>
 							<th class="text-center">Usuarios</th>
@@ -186,13 +191,13 @@
 					<tbody>
 						{#if isLoading}
 							<tr>
-								<td colspan="8" class="px-6 py-8 text-center text-app-muted">
+								<td colspan="9" class="px-6 py-8 text-center text-app-muted">
 									Cargando clientes...
 								</td>
 							</tr>
 						{:else if filteredClients.length === 0}
 							<tr>
-								<td colspan="8" class="px-6 py-8 text-center text-app-muted">
+								<td colspan="9" class="px-6 py-8 text-center text-app-muted">
 									No se encontraron clientes.
 								</td>
 							</tr>
@@ -221,6 +226,12 @@
 										>
 											{client.status}
 										</span>
+									</td>
+									<td>
+										<span class={client.nexusBadge.badgeClass}>{client.nexusBadge.label}</span>
+										<div class="mt-1 max-w-[220px] truncate text-xs text-app-muted">
+											{client.nexusDetail}
+										</div>
 									</td>
 									<td>{client.formattedCreated}</td>
 									<td>{client.formattedUpdated}</td>
