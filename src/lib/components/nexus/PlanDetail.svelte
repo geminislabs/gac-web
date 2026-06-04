@@ -13,7 +13,6 @@
 	let { plan: initialPlan, onSave } = $props();
 
 	/** @type {import('$lib/services/plans').Plan} */
-	// svelte-ignore state_referenced_locally
 	let plan = $state(structuredClone(initialPlan));
 	let isSaving = $state(false);
 
