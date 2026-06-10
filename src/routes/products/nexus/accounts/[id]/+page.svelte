@@ -4,6 +4,7 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 
+	import { SvelteSet } from 'svelte/reactivity';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
@@ -119,7 +120,7 @@
 					DevicesService.getAll({ client_id: org.id }).catch(() => [])
 				)
 			);
-			const seen = new Set();
+			const seen = new SvelteSet();
 			devices = perOrg.flat().filter((/** @type {any} */ d) => {
 				if (!d?.device_id || seen.has(d.device_id)) return false;
 				seen.add(d.device_id);
