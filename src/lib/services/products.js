@@ -1,4 +1,4 @@
-import { api } from '$lib/services/api';
+import { internalApi } from '$lib/services/api';
 
 /**
  * @typedef {Object} Product
@@ -8,7 +8,6 @@ import { api } from '$lib/services/api';
  * @property {string} [description]
  * @property {boolean} is_active
  * @property {string} [created_at]
- * @property {string} [updated_at]
  */
 
 /**
@@ -35,30 +34,19 @@ import { api } from '$lib/services/api';
  */
 
 /**
- * Normaliza la respuesta del listado (`ResponseModel` con `data` array o formato legado).
+ * Normaliza el listado de siscom-admin-api (`{ products, total }`).
  * @param {Record<string, any>|null|undefined} res
  * @returns {{ products: Product[], data: Product[] }}
  */
 function normalizeListResponse(res) {
 	const raw = res ?? {};
-	const list = (Array.isArray(raw.data) && raw.data) || raw.data?.products || raw.products || [];
+	const list = Array.isArray(raw.products) ? raw.products : [];
 	return { products: list, data: list };
-}
-
-/**
- * @param {Record<string, any>|null|undefined} res
- * @returns {any}
- */
-function unwrapData(res) {
-	if (res && typeof res === 'object' && 'data' in res && res.data !== undefined) {
-		return res.data;
-	}
-	return res;
 }
 
 export const ProductsService = {
 	/**
-	 * Lista productos del catálogo (gac-api JWT admin, vía `/api/gac`).
+	 * Lista productos del catálogo (siscom-admin-api PASETO, `/internal/products`).
 	 * @param {ProductFilters} [filters]
 	 * @returns {Promise<{ products: Product[], data?: Product[] }>}
 	 */
@@ -73,10 +61,8 @@ export const ProductsService = {
 		});
 
 		const queryString = params.toString() ? `?${params.toString()}` : '';
-		const res = await api(`/internal/products${queryString}`);
-		return /** @type {Promise<{ products: Product[], data?: Product[] }>} */ (
-			normalizeListResponse(res)
-		);
+		const res = await internalApi(`/internal/products${queryString}`);
+		return normalizeListResponse(res);
 	},
 
 	/**
@@ -85,8 +71,7 @@ export const ProductsService = {
 	 * @returns {Promise<Product>}
 	 */
 	async getById(id) {
-		const res = await api(`/internal/products/${id}`);
-		return /** @type {Promise<Product>} */ (unwrapData(res));
+		return /** @type {Product} */ (await internalApi(`/internal/products/${id}`));
 	},
 
 	/**
@@ -95,11 +80,12 @@ export const ProductsService = {
 	 * @returns {Promise<Product>}
 	 */
 	async create(data) {
-		const res = await api('/internal/products', {
-			method: 'POST',
-			body: JSON.stringify(data)
-		});
-		return /** @type {Promise<Product>} */ (unwrapData(res));
+		return /** @type {Product} */ (
+			await internalApi('/internal/products', {
+				method: 'POST',
+				body: JSON.stringify(data)
+			})
+		);
 	},
 
 	/**
@@ -109,19 +95,20 @@ export const ProductsService = {
 	 * @returns {Promise<Product>}
 	 */
 	async update(id, data) {
-		const res = await api(`/internal/products/${id}`, {
-			method: 'PATCH',
-			body: JSON.stringify(data)
-		});
-		return /** @type {Promise<Product>} */ (unwrapData(res));
+		return /** @type {Product} */ (
+			await internalApi(`/internal/products/${id}`, {
+				method: 'PATCH',
+				body: JSON.stringify(data)
+			})
+		);
 	},
 
 	/**
-	 * Soft delete (is_active = false).
+	 * Soft delete (is_active = false). Siscom responde 204 sin cuerpo.
 	 * @param {string} id
 	 * @returns {Promise<void>}
 	 */
 	async delete(id) {
-		await api(`/internal/products/${id}`, { method: 'DELETE' });
+		await internalApi(`/internal/products/${id}`, { method: 'DELETE' });
 	}
 };
