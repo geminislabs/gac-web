@@ -15,6 +15,8 @@
 	import { toast } from '$lib/stores/toast';
 	import { goto } from '$app/navigation';
 	import { nexusServiceBadge, nexusServiceDetailLine } from '$lib/utils/nexusStatus';
+	import AccountCommerceSection from '$lib/components/nexus/AccountCommerceSection.svelte';
+	import { toCommercialClientId } from '$lib/utils/commercialClient';
 
 	let clientId = $derived($page.params.id);
 
@@ -55,8 +57,9 @@
 	let nexusDetail = $derived(nexusServiceDetailLine(client));
 	let hasActiveNexus = $derived(client?.nexus_service_status === 'active');
 
+	/** @returns {Promise<any[]>} */
 	async function loadAccountData() {
-		if (!clientId) return;
+		if (!clientId) return [];
 
 		const [clientData, orgs] = await Promise.all([
 			ClientsService.getById(clientId),
@@ -75,12 +78,13 @@
 		if (!organizationId && organizations.length === 1) {
 			organizationId = organizations[0].id;
 		}
+		return organizations;
 	}
 
 	onMount(async () => {
 		try {
 			if (!clientId) return;
-			await loadAccountData();
+			const orgs = await loadAccountData();
 
 			try {
 				const plansResponse = await PlansService.getAll(false);
@@ -94,13 +98,7 @@
 				toast.error('No se pudieron cargar los planes');
 			}
 
-			try {
-				const clientDevices = await DevicesService.getAll({ client_id: clientId });
-				devices = clientDevices || [];
-			} catch (err) {
-				console.warn('Could not fetch devices for this account:', err);
-				devices = [];
-			}
+			await loadDevicesForOrganizations(orgs);
 		} catch (error) {
 			console.error('Error fetching client details:', error);
 			toast.error('Error al cargar la cuenta');
@@ -109,8 +107,32 @@
 		}
 	});
 
+	/** @param {any[]} orgs */
+	async function loadDevicesForOrganizations(orgs) {
+		if (!orgs?.length) {
+			devices = [];
+			return;
+		}
+		try {
+			const perOrg = await Promise.all(
+				orgs.map((/** @type {any} */ org) =>
+					DevicesService.getAll({ client_id: org.id }).catch(() => [])
+				)
+			);
+			const seen = new Set();
+			devices = perOrg.flat().filter((/** @type {any} */ d) => {
+				if (!d?.device_id || seen.has(d.device_id)) return false;
+				seen.add(d.device_id);
+				return true;
+			});
+		} catch (err) {
+			console.warn('Could not fetch devices for this account:', err);
+			devices = [];
+		}
+	}
+
 	function handleAddDevice() {
-		console.log('Add device to client');
+		goto('/products/nexus/devices');
 	}
 
 	async function handleManualPayment() {
@@ -197,6 +219,13 @@
 				<div>
 					<p class="text-sm text-app-muted">Creado</p>
 					<p class="font-medium text-app">{client?.formattedCreated || '-'}</p>
+				</div>
+				<div class="md:col-span-2">
+					<p class="text-sm text-app-muted">ID comercial GAC</p>
+					<p class="mt-1 break-all font-mono text-xs text-app">
+						{clientId ? toCommercialClientId(clientId) : '—'}
+					</p>
+					<p class="mt-1 text-xs text-app-muted">Mismo UUID que la cuenta Nexus (client_id)</p>
 				</div>
 				<div class="md:col-span-2">
 					<p class="text-sm text-app-muted">Servicio Nexus</p>
@@ -383,6 +412,10 @@
 				{/if}
 			</div>
 		</Card>
+
+		{#if clientId}
+			<AccountCommerceSection accountId={clientId} />
+		{/if}
 
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 			<Card class="h-full overflow-hidden">

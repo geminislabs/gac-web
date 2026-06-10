@@ -3,6 +3,7 @@ import { internalApi } from '$lib/services/api';
 /**
  * @typedef {Object} ClientAccount
  * @property {string} id
+ * @property {string} [commercial_client_id] Mismo UUID que id; client_id en gac-api
  * @property {string} account_name
  * @property {string} [billing_email]
  * @property {string} [owner_email]
