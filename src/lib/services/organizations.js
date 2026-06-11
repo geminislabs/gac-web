@@ -77,9 +77,7 @@ export const OrganizationsService = {
 	 * @returns {Promise<Organization>}
 	 */
 	async getById(id) {
-		return /** @type {Promise<Organization>} */ (
-			internalApi(`/internal/organizations/${id}`)
-		);
+		return /** @type {Promise<Organization>} */ (internalApi(`/internal/organizations/${id}`));
 	},
 
 	/**

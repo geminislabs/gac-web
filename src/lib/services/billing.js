@@ -82,9 +82,7 @@ export const BillingService = {
 	 * @param {string} invoiceId
 	 */
 	async getInvoice(organizationId, invoiceId) {
-		return internalApi(
-			`/internal/organizations/${organizationId}/billing/invoices/${invoiceId}`
-		);
+		return internalApi(`/internal/organizations/${organizationId}/billing/invoices/${invoiceId}`);
 	},
 
 	/**

@@ -272,10 +272,7 @@
 						</thead>
 						<tbody>
 							{#if payments.length === 0}
-								<tr
-									><td colspan="4" class="px-4 py-6 text-center text-app-muted"
-										>Sin pagos.</td
-									></tr
+								<tr><td colspan="4" class="px-4 py-6 text-center text-app-muted">Sin pagos.</td></tr
 								>
 							{:else}
 								{#each payments as payment (payment.id)}
@@ -313,8 +310,7 @@
 						<tbody>
 							{#if invoices.length === 0}
 								<tr
-									><td colspan="4" class="px-4 py-6 text-center text-app-muted"
-										>Sin facturas.</td
+									><td colspan="4" class="px-4 py-6 text-center text-app-muted">Sin facturas.</td
 									></tr
 								>
 							{:else}
@@ -359,9 +355,7 @@
 										<td class="text-sm">{pm.brand || pm.card_brand || '—'}</td>
 										<td class="font-mono text-sm">{pm.last4 || pm.last_four || '—'}</td>
 										<td class="text-sm"
-											>{pm.exp_month && pm.exp_year
-												? `${pm.exp_month}/${pm.exp_year}`
-												: '—'}</td
+											>{pm.exp_month && pm.exp_year ? `${pm.exp_month}/${pm.exp_year}` : '—'}</td
 										>
 										<td>{pm.is_default ? 'Sí' : '—'}</td>
 									</tr>

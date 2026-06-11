@@ -112,8 +112,7 @@
 							</tr>
 						{:else if filtered().length === 0}
 							<tr>
-								<td colspan="6" class="px-4 py-8 text-center text-app-muted"
-									>Sin organizaciones.</td
+								<td colspan="6" class="px-4 py-8 text-center text-app-muted">Sin organizaciones.</td
 								>
 							</tr>
 						{:else}
@@ -135,9 +134,7 @@
 									</td>
 									<td>{org.country || '—'}</td>
 									<td class="text-sm text-app-secondary">
-										{org.created_at
-											? new Date(org.created_at).toLocaleDateString()
-											: '—'}
+										{org.created_at ? new Date(org.created_at).toLocaleDateString() : '—'}
 									</td>
 									<td class="text-right">
 										<a href={`/products/nexus/organizations/${org.id}`}>

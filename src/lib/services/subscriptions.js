@@ -38,9 +38,7 @@ export const SubscriptionsService = {
 	 * @param {string} subscriptionId
 	 */
 	async getById(organizationId, subscriptionId) {
-		return internalApi(
-			`/internal/organizations/${organizationId}/subscriptions/${subscriptionId}`
-		);
+		return internalApi(`/internal/organizations/${organizationId}/subscriptions/${subscriptionId}`);
 	},
 
 	/**

@@ -133,9 +133,7 @@
 					<h2 class="text-lg font-semibold text-app">Información general</h2>
 					<div class="flex flex-wrap gap-2">
 						{#if !isEditing}
-							<Button variant="outline" size="sm" onclick={() => (isEditing = true)}
-								>Editar</Button
-							>
+							<Button variant="outline" size="sm" onclick={() => (isEditing = true)}>Editar</Button>
 						{/if}
 						{#if organization.status === 'ACTIVE'}
 							<Button variant="outline" size="sm" onclick={() => changeStatus('SUSPENDED')}
@@ -166,9 +164,9 @@
 					<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 						<div>
 							<p class="text-sm text-app-muted">Estado</p>
-							<p class="mt-1"><span class={statusBadgeClass(organization.status)}
-									>{organization.status}</span
-								></p>
+							<p class="mt-1">
+								<span class={statusBadgeClass(organization.status)}>{organization.status}</span>
+							</p>
 						</div>
 						<div>
 							<p class="text-sm text-app-muted">Cuenta (account_id)</p>
@@ -187,7 +185,9 @@
 						</div>
 						<div>
 							<p class="text-sm text-app-muted">País / Zona</p>
-							<p class="font-medium">{organization.country || '—'} · {organization.timezone || '—'}</p>
+							<p class="font-medium">
+								{organization.country || '—'} · {organization.timezone || '—'}
+							</p>
 						</div>
 						<div>
 							<p class="text-sm text-app-muted">ID</p>
@@ -222,8 +222,7 @@
 							<tbody>
 								{#if users.length === 0}
 									<tr
-										><td colspan="3" class="px-4 py-6 text-center text-app-muted"
-											>Sin usuarios.</td
+										><td colspan="3" class="px-4 py-6 text-center text-app-muted">Sin usuarios.</td
 										></tr
 									>
 								{:else}
