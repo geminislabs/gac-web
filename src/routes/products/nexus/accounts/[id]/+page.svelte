@@ -251,6 +251,56 @@
 		<Card class="p-6">
 			<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
 				<div>
+					<h2 class="text-lg font-semibold text-app">Organizaciones</h2>
+					<p class="mt-1 text-sm text-app-muted">
+						Raíz operativa de esta cuenta. Gestiona suscripciones y dispositivos por organización.
+					</p>
+				</div>
+				<a href={`/products/nexus/organizations/create?account_id=${clientId}`}>
+					<Button variant="outline" size="sm">Nueva organización</Button>
+				</a>
+			</div>
+			<div class="overflow-x-auto rounded-lg border" style="border-color: var(--color-border)">
+				<table class="gac-table">
+					<thead>
+						<tr>
+							<th>Nombre</th>
+							<th>Estado</th>
+							<th>Nexus</th>
+							<th class="text-right">Acción</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#if organizations.length === 0}
+							<tr>
+								<td colspan="4" class="px-4 py-6 text-center text-app-muted">
+									Sin organizaciones.
+								</td>
+							</tr>
+						{:else}
+							{#each organizations as org (org.id)}
+								<tr>
+									<td class="font-medium text-app">{org.name}</td>
+									<td>{org.status || '—'}</td>
+									<td class="text-sm">
+										{org.nexus_service_status === 'active' ? 'Activo' : 'Inactivo'}
+									</td>
+									<td class="text-right">
+										<a href={`/products/nexus/organizations/${org.id}`}>
+											<Button variant="ghost" size="sm">Ver</Button>
+										</a>
+									</td>
+								</tr>
+							{/each}
+						{/if}
+					</tbody>
+				</table>
+			</div>
+		</Card>
+
+		<Card class="p-6">
+			<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+				<div>
 					<h2 class="text-lg font-semibold text-app">Pago en efectivo</h2>
 					<p class="mt-1 text-sm text-app-muted">
 						Registra el cobro y activa la suscripción Nexus de inmediato. El monto se calcula en el
