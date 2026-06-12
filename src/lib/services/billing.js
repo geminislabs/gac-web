@@ -36,5 +36,64 @@ export const BillingService = {
 				body: JSON.stringify(payload)
 			})
 		);
+	},
+
+	/**
+	 * @param {string} organizationId
+	 */
+	async getSummary(organizationId) {
+		return internalApi(`/internal/organizations/${organizationId}/billing/summary`);
+	},
+
+	/**
+	 * @param {string} organizationId
+	 * @param {{ limit?: number, offset?: number, status?: string }} [filters]
+	 */
+	async listPayments(organizationId, filters = {}) {
+		const params = new URLSearchParams();
+		Object.entries(filters).forEach(([key, value]) => {
+			if (value != null && value !== '') params.append(key, String(value));
+		});
+		const qs = params.toString() ? `?${params.toString()}` : '';
+		const response = await internalApi(
+			`/internal/organizations/${organizationId}/billing/payments${qs}`
+		);
+		return response?.payments ?? [];
+	},
+
+	/**
+	 * @param {string} organizationId
+	 * @param {{ limit?: number, offset?: number }} [filters]
+	 */
+	async listInvoices(organizationId, filters = {}) {
+		const params = new URLSearchParams();
+		Object.entries(filters).forEach(([key, value]) => {
+			if (value != null && value !== '') params.append(key, String(value));
+		});
+		const qs = params.toString() ? `?${params.toString()}` : '';
+		const response = await internalApi(
+			`/internal/organizations/${organizationId}/billing/invoices${qs}`
+		);
+		return response?.invoices ?? [];
+	},
+
+	/**
+	 * @param {string} organizationId
+	 * @param {string} invoiceId
+	 */
+	async getInvoice(organizationId, invoiceId) {
+		return internalApi(`/internal/organizations/${organizationId}/billing/invoices/${invoiceId}`);
+	},
+
+	/**
+	 * Métodos de pago guardados (solo lectura).
+	 * @param {string} organizationId
+	 * @param {string} [gateway]
+	 */
+	async listPaymentMethods(organizationId, gateway = 'stripe') {
+		const response = await internalApi(
+			`/internal/organizations/${organizationId}/billing/payment-methods?gateway=${encodeURIComponent(gateway)}`
+		);
+		return Array.isArray(response) ? response : [];
 	}
 };
