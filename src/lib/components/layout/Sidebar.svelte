@@ -21,6 +21,13 @@
 			nexus: true
 		},
 		{ href: '/products/nexus', label: 'Nexus', icon: 'Smartphone', section: 'main', nexus: true },
+		{
+			href: '/products/nexus/organizations',
+			label: 'Organizaciones',
+			icon: 'Users',
+			section: 'main',
+			nexus: true
+		},
 		{ href: '/products/plans', label: 'Planes', icon: 'Tag', section: 'main', nexus: true },
 		{ href: '/admin/orders', label: 'Órdenes', icon: 'ShoppingCart', section: 'commerce' },
 		{ href: '/admin/payments', label: 'Pagos', icon: 'CreditCard', section: 'commerce' },
@@ -52,10 +59,21 @@
 
 	let userEmail = $derived($auth.user?.email || 'sin-email@local');
 
-	/** @param {string} href */
-	function isActive(href) {
-		if (href === '/') return $page.url.pathname === '/';
-		return $page.url.pathname.startsWith(href);
+	/**
+	 * Solo un ítem activo: el prefijo de href más específico que coincida.
+	 * Evita que /products/nexus quede activo en /products/nexus/organizations.
+	 * @param {MenuItem} item
+	 */
+	function isActive(item) {
+		const pathname = $page.url.pathname;
+		/** @type {MenuItem[]} */
+		const matches = visibleMenuItems.filter((entry) => {
+			if (entry.href === '/') return pathname === '/';
+			return pathname === entry.href || pathname.startsWith(`${entry.href}/`);
+		});
+		if (matches.length === 0) return false;
+		const best = matches.reduce((a, b) => (a.href.length >= b.href.length ? a : b));
+		return best.href === item.href;
 	}
 </script>
 
@@ -114,22 +132,22 @@
 			<a
 				href={item.href}
 				title={isCollapsed ? item.label : undefined}
-				aria-current={isActive(item.href) ? 'page' : undefined}
+				aria-current={isActive(item) ? 'page' : undefined}
 				class="group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium theme-transition
-					{isActive(item.href) ? 'text-app shadow-sm' : 'text-app-secondary hover:text-app'}
+					{isActive(item) ? 'text-app shadow-sm' : 'text-app-secondary hover:text-app'}
 					{isCollapsed ? 'justify-center' : ''}"
 				style="
-					background: {isActive(item.href) ? 'var(--gradient-primary)' : 'transparent'};
-					box-shadow: {isActive(item.href) ? '0 4px 16px var(--color-shadow-primary)' : 'none'};
+					background: {isActive(item) ? 'var(--gradient-primary)' : 'transparent'};
+					box-shadow: {isActive(item) ? '0 4px 16px var(--color-shadow-primary)' : 'none'};
 				"
 				onmouseenter={(e) => {
-					if (!isActive(item.href)) {
+					if (!isActive(item)) {
 						/** @type {HTMLElement} */ (e.currentTarget).style.backgroundColor =
 							'var(--color-bg-elevated)';
 					}
 				}}
 				onmouseleave={(e) => {
-					if (!isActive(item.href)) {
+					if (!isActive(item)) {
 						/** @type {HTMLElement} */ (e.currentTarget).style.backgroundColor = 'transparent';
 					}
 				}}
