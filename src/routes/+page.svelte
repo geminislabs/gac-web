@@ -4,6 +4,9 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import { onMount } from 'svelte';
 	import { ClientsService } from '$lib/services/clients';
+	import { OrdersService } from '$lib/services/orders';
+	import { PaymentsService } from '$lib/services/payments';
+	import { ShipmentsService } from '$lib/services/shipments';
 	import { auth } from '$lib/stores/auth';
 	import { canAccessNexus, canManageInternalUsers } from '$lib/utils/roles';
 
@@ -13,8 +16,79 @@
 	let userCount = $state(0);
 	let statsError = $state(false);
 
+	let orderCount = $state(0);
+	let paymentCount = $state(0);
+	let shipmentCount = $state(0);
+	let commerceStatsError = $state(false);
+
+	/**
+	 * @typedef {{ kind: 'order' | 'payment' | 'shipment', title: string, detail: string, created_at: string, href: string, dotColor: string }} ActivityItem
+	 */
+
+	/** @type {ActivityItem[]} */
+	let recentActivity = $state([]);
+
 	let showNexus = $derived(canAccessNexus($auth.user));
 	let showAdmin = $derived(canManageInternalUsers($auth.user));
+
+	/** @param {string | undefined} dateStr */
+	function formatRelativeTime(dateStr) {
+		if (!dateStr) return '—';
+		const diff = Date.now() - new Date(dateStr).getTime();
+		const mins = Math.floor(diff / 60000);
+		if (mins < 1) return 'Hace un momento';
+		if (mins < 60) return `Hace ${mins} min`;
+		const hours = Math.floor(mins / 60);
+		if (hours < 24) return `Hace ${hours} h`;
+		const days = Math.floor(hours / 24);
+		return `Hace ${days} d`;
+	}
+
+	/**
+	 * @param {import('$lib/services/orders').Order[]} orders
+	 * @param {import('$lib/services/payments').Payment[]} payments
+	 * @param {import('$lib/services/shipments').Shipment[]} shipments
+	 * @returns {ActivityItem[]}
+	 */
+	function buildRecentActivity(orders, payments, shipments) {
+		/** @type {ActivityItem[]} */
+		const items = [
+			...orders.map((o) => ({
+				kind: /** @type {const} */ ('order'),
+				title: 'Orden registrada',
+				detail: `${o.order_id.slice(0, 8)}… · ${o.status}`,
+				created_at: o.created_at,
+				href: `/admin/orders/${o.order_id}`,
+				dotColor: 'var(--color-info)'
+			})),
+			...payments.map((p) => ({
+				kind: /** @type {const} */ ('payment'),
+				title: 'Pago registrado',
+				detail: `${formatAmount(p.amount)} · ${p.status}`,
+				created_at: p.created_at,
+				href: `/admin/payments/${p.payment_id}`,
+				dotColor: 'var(--color-success)'
+			})),
+			...shipments.map((s) => ({
+				kind: /** @type {const} */ ('shipment'),
+				title: 'Envío registrado',
+				detail: `${s.shipment_id.slice(0, 8)}… · ${s.status ?? '—'}`,
+				created_at: s.created_at,
+				href: `/admin/shipments/${s.shipment_id}`,
+				dotColor: 'var(--color-warning)'
+			}))
+		];
+		return items
+			.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+			.slice(0, 8);
+	}
+
+	/** @param {string} amount */
+	function formatAmount(amount) {
+		const value = Number(amount);
+		if (Number.isNaN(value)) return amount;
+		return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
+	}
 
 	onMount(() => {
 		const interval = setInterval(() => {
@@ -22,18 +96,41 @@
 		}, 1000);
 
 		(async () => {
-			if (!canAccessNexus($auth.user)) {
-				return;
+			const tasks = [];
+
+			if (canAccessNexus($auth.user)) {
+				tasks.push(
+					ClientsService.getStats()
+						.then((clientStats) => {
+							nexusDeviceCount = clientStats?.devices?.total ?? 0;
+							nexusClientCount = clientStats?.accounts?.total ?? 0;
+							userCount = clientStats?.users?.total ?? 0;
+						})
+						.catch(() => {
+							statsError = true;
+						})
+				);
 			}
-			try {
-				const clientStats = await ClientsService.getStats();
-				nexusDeviceCount = clientStats?.devices?.total ?? 0;
-				nexusClientCount = clientStats?.accounts?.total ?? 0;
-				userCount = clientStats?.users?.total ?? 0;
-			} catch (error) {
-				console.error('Error fetching dashboard stats:', error);
-				statsError = true;
-			}
+
+			tasks.push(
+				Promise.all([
+					OrdersService.list({ limit: 500 }),
+					PaymentsService.list({ limit: 500 }),
+					ShipmentsService.list({ limit: 500 })
+				])
+					.then(([orders, payments, shipments]) => {
+						orderCount = orders.length;
+						paymentCount = payments.length;
+						shipmentCount = shipments.length;
+						recentActivity = buildRecentActivity(orders, payments, shipments);
+					})
+					.catch(() => {
+						commerceStatsError = true;
+						recentActivity = [];
+					})
+			);
+
+			await Promise.all(tasks);
 		})();
 
 		return () => clearInterval(interval);
@@ -236,9 +333,56 @@
 				style="border-left-color: var(--color-warning); background-color: var(--color-warning-bg)"
 				role="alert"
 			>
-				No se pudieron obtener métricas en tiempo real. Verifica la conexión con los servicios.
+				No se pudieron obtener métricas Nexus. Verifica la conexión con los servicios.
 			</div>
 		{/if}
+
+		{#if commerceStatsError}
+			<div
+				class="gac-panel-solid border-l-4 p-4 text-sm text-app-secondary"
+				style="border-left-color: var(--color-warning); background-color: var(--color-warning-bg)"
+				role="alert"
+			>
+				No se pudieron obtener métricas de comercio GAC.
+			</div>
+		{/if}
+
+		<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+			<Card hover padding class="border-l-4" style="border-left-color: var(--color-accent-primary)">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="mb-1 text-xs font-medium uppercase tracking-wide text-app-muted">
+							Órdenes GAC
+						</p>
+						<h3 class="text-2xl font-bold text-app">{orderCount}</h3>
+						<p class="mt-1 text-xs text-app-muted">Registradas en gac-api</p>
+					</div>
+					<a href="/admin/orders" class="text-xs font-medium text-accent hover:underline">Ver</a>
+				</div>
+			</Card>
+			<Card hover padding class="border-l-4" style="border-left-color: var(--color-success)">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="mb-1 text-xs font-medium uppercase tracking-wide text-app-muted">Pagos GAC</p>
+						<h3 class="text-2xl font-bold text-app">{paymentCount}</h3>
+						<p class="mt-1 text-xs text-app-muted">Cobros vinculados</p>
+					</div>
+					<a href="/admin/payments" class="text-xs font-medium text-accent hover:underline">Ver</a>
+				</div>
+			</Card>
+			<Card hover padding class="border-l-4" style="border-left-color: var(--color-info)">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="mb-1 text-xs font-medium uppercase tracking-wide text-app-muted">
+							Envíos GAC
+						</p>
+						<h3 class="text-2xl font-bold text-app">{shipmentCount}</h3>
+						<p class="mt-1 text-xs text-app-muted">Guías y logística</p>
+					</div>
+					<a href="/admin/shipments" class="text-xs font-medium text-accent hover:underline">Ver</a>
+				</div>
+			</Card>
+		</div>
 
 		<!-- Main Content Grid -->
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -444,63 +588,37 @@
 
 			<!-- Recent Activity -->
 			<div class="space-y-4">
-				<h2 class="text-base font-semibold text-app">Actividad reciente</h2>
+				<h2 class="text-base font-semibold text-app">Actividad comercial reciente</h2>
 				<Card class="h-full">
 					<div class="p-4">
-						<ul class="divide-y" style="border-color: var(--color-border)">
-							<li class="flex gap-3 py-3">
-								<span
-									class="mt-1 inline-block h-2 w-2 shrink-0 rounded-full"
-									style="background-color: var(--color-info)"
-									aria-hidden="true"
-								></span>
-								<div class="min-w-0">
-									<p class="text-xs text-app-muted">Hace 10 min</p>
-									<p class="truncate text-sm font-medium text-app">Nuevo dispositivo registrado</p>
-									<p class="truncate text-xs text-app-muted">ID: 86756405…</p>
-								</div>
-							</li>
-							<li class="flex gap-3 py-3">
-								<span
-									class="mt-1 inline-block h-2 w-2 shrink-0 rounded-full"
-									style="background-color: var(--color-success)"
-									aria-hidden="true"
-								></span>
-								<div class="min-w-0">
-									<p class="text-xs text-app-muted">Hace 25 min</p>
-									<p class="truncate text-sm font-medium text-app">Actualización del sistema</p>
-									<p class="truncate text-xs text-app-muted">Deploy exitoso v1.0.2</p>
-								</div>
-							</li>
-							<li class="flex gap-3 py-3">
-								<span
-									class="mt-1 inline-block h-2 w-2 shrink-0 rounded-full"
-									style="background-color: var(--color-warning)"
-									aria-hidden="true"
-								></span>
-								<div class="min-w-0">
-									<p class="text-xs text-app-muted">Hace 1 h 12 min</p>
-									<p class="truncate text-sm font-medium text-app">Alerta de conexión</p>
-									<p class="truncate text-xs text-app-muted">Latencia alta en región US-East</p>
-								</div>
-							</li>
-							<li class="flex gap-3 py-3">
-								<span
-									class="mt-1 inline-block h-2 w-2 shrink-0 rounded-full"
-									style="background-color: var(--color-text-muted)"
-									aria-hidden="true"
-								></span>
-								<div class="min-w-0">
-									<p class="text-xs text-app-muted">Hace 2 h</p>
-									<p class="truncate text-sm font-medium text-app">Login de administrador</p>
-									<p class="truncate text-xs text-app-muted">admin@geminislabs.com</p>
-								</div>
-							</li>
-						</ul>
+						{#if recentActivity.length === 0}
+							<p class="py-6 text-center text-sm text-app-muted">
+								Sin actividad comercial reciente.
+							</p>
+						{:else}
+							<ul class="divide-y" style="border-color: var(--color-border)">
+								{#each recentActivity as item (item.href + item.created_at)}
+									<li>
+										<a href={item.href} class="flex gap-3 py-3 hover:opacity-80">
+											<span
+												class="mt-1 inline-block h-2 w-2 shrink-0 rounded-full"
+												style="background-color: {item.dotColor}"
+												aria-hidden="true"
+											></span>
+											<div class="min-w-0">
+												<p class="text-xs text-app-muted">{formatRelativeTime(item.created_at)}</p>
+												<p class="truncate text-sm font-medium text-app">{item.title}</p>
+												<p class="truncate text-xs text-app-muted">{item.detail}</p>
+											</div>
+										</a>
+									</li>
+								{/each}
+							</ul>
+						{/if}
 						<div class="mt-2 border-t pt-4 text-center" style="border-color: var(--color-border)">
-							<button type="button" class="text-xs font-medium text-accent hover:underline">
-								Ver todo el historial
-							</button>
+							<a href="/admin/orders" class="text-xs font-medium text-accent hover:underline">
+								Ver todas las órdenes
+							</a>
 						</div>
 					</div>
 				</Card>

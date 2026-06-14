@@ -6,10 +6,13 @@
 	import { onMount } from 'svelte';
 	import { ShipmentsService } from '$lib/services/shipments';
 	import { toast } from '$lib/stores/toast';
+	import { auth } from '$lib/stores/auth';
+	import { canAccessNexus } from '$lib/utils/roles';
 
 	/** @type {import('$lib/services/shipments').Shipment[]} */
 	let shipments = $state([]);
 	let isLoading = $state(true);
+	let showNexusLink = $derived(canAccessNexus($auth.user));
 	let searchQuery = $state('');
 	let statusFilter = $state('');
 	let currentPage = $state(1);
@@ -88,22 +91,6 @@
 		}
 	}
 
-	/**
-	 * @param {string} shipmentId
-	 * @param {string} newStatus
-	 */
-	async function changeStatus(shipmentId, newStatus) {
-		try {
-			await ShipmentsService.updateStatus(shipmentId, newStatus);
-			toast.success('Estado del envío actualizado');
-			await loadShipments();
-		} catch (error) {
-			console.error('Error updating shipment status:', error);
-			const message = error instanceof Error ? error.message : 'Error desconocido';
-			toast.error('Error al actualizar el envío: ' + message);
-		}
-	}
-
 	onMount(loadShipments);
 </script>
 
@@ -174,8 +161,18 @@
 							{#each paginated() as shipment (shipment.shipment_id)}
 								<tr>
 									<td class="font-mono text-xs text-app">{shipment.shipment_id.slice(0, 8)}…</td>
-									<td class="font-mono text-xs text-app-secondary">
-										{shipment.client_id.slice(0, 8)}…
+									<td class="font-mono text-xs">
+										{#if showNexusLink}
+											<a
+												href={`/products/nexus/accounts/${shipment.client_id}`}
+												class="text-accent hover:underline"
+												title={shipment.client_id}
+											>
+												{shipment.client_id.slice(0, 8)}…
+											</a>
+										{:else}
+											<span class="text-app-secondary">{shipment.client_id.slice(0, 8)}…</span>
+										{/if}
 									</td>
 									<td>
 										<span class={statusBadgeClass(shipment.status ?? '')}>
@@ -188,22 +185,9 @@
 									</td>
 									<td class="text-sm text-app-secondary">{formatDate(shipment.created_at)}</td>
 									<td class="text-right">
-										<select
-											class="gac-input h-8 text-xs"
-											value={shipment.status ?? ''}
-											onchange={(e) =>
-												changeStatus(
-													shipment.shipment_id,
-													/** @type {HTMLSelectElement} */ (e.target).value
-												)}
-										>
-											<option value="pending">Pendiente</option>
-											<option value="preparing">En preparación</option>
-											<option value="shipped">Enviado</option>
-											<option value="in_transit">En tránsito</option>
-											<option value="delivered">Entregado</option>
-											<option value="cancelled">Cancelado</option>
-										</select>
+										<a href={`/admin/shipments/${shipment.shipment_id}`}>
+											<Button variant="ghost" size="sm">Ver</Button>
+										</a>
 									</td>
 								</tr>
 							{/each}

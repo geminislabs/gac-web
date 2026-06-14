@@ -10,18 +10,19 @@ This documentation supports C4 container and component diagrams.
 
 ### APIs Consumidas por Módulo
 
-| Módulo                              | GAC API               | SISCOM Admin API          | SISCOM API        | WebSocket | Otros |
-| ----------------------------------- | --------------------- | ------------------------- | ----------------- | --------- | ----- |
-| [auth](auth.md)                     | ✅ Login, Refresh, Me | ✅ Internal Auth          | -                 | -         | -     |
-| [dashboard](dashboard.md)           | ✅ Users              | ✅ Devices, Clients Stats | -                 | -         | -     |
-| [admin-users](admin-users.md)       | ✅ Users, Roles       | -                         | -                 | -         | -     |
-| [nexus-clients](nexus-clients.md)   | -                     | ✅ Internal Clients       | -                 | -         | -     |
-| [nexus-devices](nexus-devices.md)   | -                     | ✅ Devices, Events        | ✅ Communications | ✅ Stream | -     |
-| [nexus-commands](nexus-commands.md) | -                     | ✅ Commands               | -                 | -         | -     |
-| [nexus-trips](nexus-trips.md)       | -                     | ✅ Trips                  | -                 | -         | -     |
-| [orders](orders.md)                 | ✅ Orders             | -                         | -                 | -         | -     |
-| [products](products.md)             | ✅ Products           | -                         | -                 | -         | -     |
-| [payments](payments.md)             | ✅ Payments           | -                         | -                 | -         | -     |
+| Módulo                                  | GAC API                          | SISCOM Admin API                    | SISCOM API        | WebSocket | Otros |
+| --------------------------------------- | -------------------------------- | ----------------------------------- | ----------------- | --------- | ----- |
+| [auth](auth.md)                         | ✅ Login, Refresh, Me            | ✅ Internal Auth                    | -                 | -         | -     |
+| [dashboard](dashboard.md)               | ✅ Users                         | ✅ Devices, Clients Stats           | -                 | -         | -     |
+| [admin-users](admin-users.md)           | ✅ Users, Roles                  | -                                   | -                 | -         | -     |
+| [nexus-clients](nexus-clients.md)       | ✅ GAC Orders/Payments/Shipments | ✅ Internal Accounts, Orgs, Billing | -                 | -         | -     |
+| [nexus-organizations](nexus-clients.md) | -                                | ✅ Internal Organizations + Billing | -                 | -         | -     |
+| [nexus-devices](nexus-devices.md)       | -                                | ✅ Devices, Events                  | ✅ Communications | ✅ Stream | -     |
+| [nexus-commands](nexus-commands.md)     | -                                | ✅ Commands                         | -                 | -         | -     |
+| [nexus-trips](nexus-trips.md)           | -                                | ✅ Trips                            | -                 | -         | -     |
+| [orders](orders.md)                     | ✅ Orders                        | -                                   | -                 | -         | -     |
+| [products](products.md)                 | -                                | ✅ Internal Products                | -                 | -         | -     |
+| [payments](payments.md)                 | ✅ Payments                      | ✅ Org Billing (read)               | -                 | -         | -     |
 
 ---
 
@@ -30,13 +31,13 @@ This documentation supports C4 container and component diagrams.
 ### GAC API
 
 **Base URL:** `PUBLIC_GAC_API_URL`  
-**Descripción:** API administrativa interna para gestión de usuarios, roles, órdenes, productos y pagos.  
+**Descripción:** API administrativa interna para gestión de usuarios, roles, órdenes comerciales, pagos y envíos (schema `gac`).  
 **Autenticación:** Bearer Token (JWT)
 
 ### SISCOM Admin API
 
 **Base URL:** `PUBLIC_SISCOM_ADMIN_API_URL`  
-**Descripción:** API de gestión administrativa de Nexus (clientes, dispositivos, comandos, viajes).  
+**Descripción:** API de gestión administrativa de Nexus (cuentas, organizaciones, billing, dispositivos, comandos, viajes, catálogo).  
 **Autenticación:** Bearer Token (PASETO) obtenido vía `/auth/internal`
 
 ### SISCOM API

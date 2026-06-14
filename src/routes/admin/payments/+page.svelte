@@ -6,10 +6,13 @@
 	import { onMount } from 'svelte';
 	import { PaymentsService } from '$lib/services/payments';
 	import { toast } from '$lib/stores/toast';
+	import { auth } from '$lib/stores/auth';
+	import { canAccessNexus } from '$lib/utils/roles';
 
 	/** @type {import('$lib/services/payments').Payment[]} */
 	let payments = $state([]);
 	let isLoading = $state(true);
+	let showNexusLink = $derived(canAccessNexus($auth.user));
 	let searchQuery = $state('');
 	let statusFilter = $state('');
 	let currentPage = $state(1);
@@ -151,16 +154,17 @@
 							<th>Monto</th>
 							<th>Transaction Ref</th>
 							<th>Fecha</th>
+							<th class="text-right">Acción</th>
 						</tr>
 					</thead>
 					<tbody>
 						{#if isLoading}
 							<tr>
-								<td colspan="7" class="py-8 text-center text-app-muted">Cargando pagos…</td>
+								<td colspan="8" class="py-8 text-center text-app-muted">Cargando pagos…</td>
 							</tr>
 						{:else if paginated().length === 0}
 							<tr>
-								<td colspan="7" class="py-12 text-center text-app-muted">
+								<td colspan="8" class="py-12 text-center text-app-muted">
 									No hay pagos para mostrar con los filtros aplicados.
 								</td>
 							</tr>
@@ -168,8 +172,18 @@
 							{#each paginated() as payment (payment.payment_id)}
 								<tr>
 									<td class="font-mono text-xs text-app">{payment.payment_id.slice(0, 8)}…</td>
-									<td class="font-mono text-xs text-app-secondary">
-										{payment.client_id.slice(0, 8)}…
+									<td class="font-mono text-xs">
+										{#if showNexusLink}
+											<a
+												href={`/products/nexus/accounts/${payment.client_id}`}
+												class="text-accent hover:underline"
+												title={payment.client_id}
+											>
+												{payment.client_id.slice(0, 8)}…
+											</a>
+										{:else}
+											<span class="text-app-secondary">{payment.client_id.slice(0, 8)}…</span>
+										{/if}
 									</td>
 									<td>
 										<span class={statusBadgeClass(payment.status)}>{payment.status}</span>
@@ -180,6 +194,11 @@
 										{payment.transaction_ref ?? '—'}
 									</td>
 									<td class="text-sm text-app-secondary">{formatDate(payment.created_at)}</td>
+									<td class="text-right">
+										<a href={`/admin/payments/${payment.payment_id}`}>
+											<Button variant="ghost" size="sm">Ver</Button>
+										</a>
+									</td>
 								</tr>
 							{/each}
 						{/if}
