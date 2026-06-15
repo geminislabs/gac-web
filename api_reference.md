@@ -105,20 +105,28 @@ Base URL: `http://localhost:8000/api/v1`
 
 ## Business Resources
 
+### Commercial Clients
+
+- **Get Client Summary**: `GET /clients/{client_id}` — counts of orders, payments and shipments
+
 ### Orders
 
+- **List Orders**: `GET /orders` — query: `skip`, `limit`, `status`
 - **Create Order**: `POST /orders`
 - **Get Order**: `GET /orders/{order_id}`
 - **Get Client Orders**: `GET /clients/{client_id}/orders`
 
 ### Payments
 
+- **List Payments**: `GET /payments` — query: `skip`, `limit`, `status`
 - **Create Payment**: `POST /payments`
 - **Get Payment**: `GET /payments/{payment_id}`
 - **Get Client Payments**: `GET /clients/{client_id}/payments`
 
 ### Shipments
 
+- **List Shipments**: `GET /shipments` — query: `skip`, `limit`, `status`
+- **Get Shipment**: `GET /shipments/{shipment_id}`
 - **Create Shipment**: `POST /shipments`
 - **Update Status**: `PATCH /shipments/{shipment_id}/status`
 - **Get Client Shipments**: `GET /clients/{client_id}/shipments`

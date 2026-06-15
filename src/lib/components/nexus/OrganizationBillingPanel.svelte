@@ -24,6 +24,8 @@
 	let paymentMethods = $state([]);
 	/** @type {any[]} */
 	let plans = $state([]);
+	/** @type {Record<string, any> | null} */
+	let billingSummary = $state(null);
 
 	let planId = $state('');
 	let billingCycle = $state('MONTHLY');
@@ -43,17 +45,19 @@
 	async function loadAll() {
 		isLoading = true;
 		try {
-			const [subs, pays, invs, pms, plansRes] = await Promise.all([
+			const [subs, pays, invs, pms, plansRes, summaryRes] = await Promise.all([
 				SubscriptionsService.listByOrganization(organizationId, { limit: 50 }),
 				BillingService.listPayments(organizationId, { limit: 50 }),
 				BillingService.listInvoices(organizationId, { limit: 50 }),
 				BillingService.listPaymentMethods(organizationId).catch(() => []),
-				PlansService.getAll(false).catch(() => [])
+				PlansService.getAll(false).catch(() => []),
+				BillingService.getSummary(organizationId).catch(() => null)
 			]);
 			subscriptions = subs;
 			payments = pays;
 			invoices = invs;
 			paymentMethods = pms;
+			billingSummary = summaryRes;
 			const planList = Array.isArray(plansRes)
 				? plansRes
 				: plansRes?.plans || plansRes?.data?.plans || [];
@@ -172,6 +176,37 @@
 			></div>
 		</div>
 	{:else}
+		{#if billingSummary}
+			<div
+				class="mb-6 grid grid-cols-1 gap-4 rounded-lg border p-4 md:grid-cols-3"
+				style="border-color: var(--color-border)"
+			>
+				<div>
+					<p class="text-xs uppercase tracking-wide text-app-muted">Plan actual</p>
+					<p class="mt-1 font-medium text-app">
+						{billingSummary.current_plan?.plan_name ?? 'Sin plan activo'}
+					</p>
+					{#if billingSummary.current_plan?.billing_cycle}
+						<p class="text-xs text-app-muted">{billingSummary.current_plan.billing_cycle}</p>
+					{/if}
+				</div>
+				<div>
+					<p class="text-xs uppercase tracking-wide text-app-muted">Pendiente</p>
+					<p class="mt-1 text-lg font-semibold text-app">
+						{formatAmount(billingSummary.pending_amount)}
+					</p>
+				</div>
+				<div>
+					<p class="text-xs uppercase tracking-wide text-app-muted">Total pagado</p>
+					<p class="mt-1 text-lg font-semibold text-app">
+						{formatAmount(billingSummary.stats?.total_paid)}
+					</p>
+					<p class="text-xs text-app-muted">
+						{billingSummary.stats?.payments_count ?? 0} pago(s)
+					</p>
+				</div>
+			</div>
+		{/if}
 		<div class="space-y-8">
 			<div>
 				<h3 class="mb-3 text-sm font-semibold text-app">Pago en efectivo</h3>
@@ -305,12 +340,13 @@
 								<th>Estado</th>
 								<th>Total</th>
 								<th>Creada</th>
+								<th class="text-right">Acción</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#if invoices.length === 0}
 								<tr
-									><td colspan="4" class="px-4 py-6 text-center text-app-muted">Sin facturas.</td
+									><td colspan="5" class="px-4 py-6 text-center text-app-muted">Sin facturas.</td
 									></tr
 								>
 							{:else}
@@ -320,6 +356,13 @@
 										<td><span class={statusBadgeClass(inv.status)}>{inv.status}</span></td>
 										<td>{formatAmount(inv.amount)}</td>
 										<td class="text-sm">{formatDate(inv.created_at)}</td>
+										<td class="text-right">
+											<a
+												href={`/products/nexus/organizations/${organizationId}/invoices/${inv.id}`}
+											>
+												<Button variant="ghost" size="sm">Ver</Button>
+											</a>
+										</td>
 									</tr>
 								{/each}
 							{/if}
@@ -346,7 +389,8 @@
 							{#if paymentMethods.length === 0}
 								<tr
 									><td colspan="4" class="px-4 py-6 text-center text-app-muted"
-										>Sin métodos guardados.</td
+										>Sin métodos guardados. La gestión de tarjetas Stripe no está disponible desde
+										GAC.</td
 									></tr
 								>
 							{:else}

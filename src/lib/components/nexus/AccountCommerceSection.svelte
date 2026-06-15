@@ -17,6 +17,8 @@
 	let payments = $state([]);
 	/** @type {import('$lib/services/shipments').Shipment[]} */
 	let shipments = $state([]);
+	/** @type {{ orders_count?: number, payments_count?: number, shipments_count?: number } | null} */
+	let summary = $state(null);
 
 	$effect(() => {
 		if (!accountId) return;
@@ -33,6 +35,7 @@
 			orders = bundle.orders;
 			payments = bundle.payments;
 			shipments = bundle.shipments;
+			summary = bundle.summary;
 		} catch (error) {
 			console.error('Error loading commerce data:', error);
 			loadError = 'No se pudo cargar la información comercial.';
@@ -40,6 +43,7 @@
 			orders = [];
 			payments = [];
 			shipments = [];
+			summary = null;
 		} finally {
 			isLoading = false;
 		}
@@ -101,8 +105,14 @@
 				de Nexus.
 			</p>
 		</div>
+		<a href={`/admin/orders/create?client_id=${encodeURIComponent(accountId)}`}>
+			<Button variant="primary" size="sm">Nueva orden</Button>
+		</a>
 		<a href="/admin/orders">
 			<Button variant="outline" size="sm">Ir a órdenes</Button>
+		</a>
+		<a href="/admin/shipments">
+			<Button variant="outline" size="sm">Ir a envíos</Button>
 		</a>
 	</div>
 
@@ -124,6 +134,22 @@
 	{:else if loadError}
 		<p class="text-sm text-app-muted" role="alert">{loadError}</p>
 	{:else}
+		<div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+			<div class="rounded-lg border p-4" style="border-color: var(--color-border)">
+				<p class="text-xs uppercase tracking-wide text-app-muted">Órdenes</p>
+				<p class="mt-1 text-2xl font-bold text-app">{summary?.orders_count ?? orders.length}</p>
+			</div>
+			<div class="rounded-lg border p-4" style="border-color: var(--color-border)">
+				<p class="text-xs uppercase tracking-wide text-app-muted">Pagos</p>
+				<p class="mt-1 text-2xl font-bold text-app">{summary?.payments_count ?? payments.length}</p>
+			</div>
+			<div class="rounded-lg border p-4" style="border-color: var(--color-border)">
+				<p class="text-xs uppercase tracking-wide text-app-muted">Envíos</p>
+				<p class="mt-1 text-2xl font-bold text-app">
+					{summary?.shipments_count ?? shipments.length}
+				</p>
+			</div>
+		</div>
 		<div class="space-y-6">
 			<div>
 				<h3 class="mb-3 text-sm font-semibold text-app">
@@ -182,12 +208,13 @@
 								<th>Monto</th>
 								<th>Método</th>
 								<th>Creado</th>
+								<th class="text-right">Acción</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#if payments.length === 0}
 								<tr>
-									<td colspan="5" class="px-4 py-6 text-center text-app-muted">
+									<td colspan="6" class="px-4 py-6 text-center text-app-muted">
 										Sin pagos registrados en GAC.
 									</td>
 								</tr>
@@ -201,6 +228,11 @@
 										<td>{formatAmount(payment.amount)}</td>
 										<td class="text-sm">{payment.method}</td>
 										<td class="text-sm text-app-secondary">{formatDate(payment.created_at)}</td>
+										<td class="text-right">
+											<a href={`/admin/payments/${payment.payment_id}`}>
+												<Button variant="ghost" size="sm">Ver</Button>
+											</a>
+										</td>
 									</tr>
 								{/each}
 							{/if}
@@ -222,12 +254,13 @@
 								<th>Transportista</th>
 								<th>Guía</th>
 								<th>Creado</th>
+								<th class="text-right">Acción</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#if shipments.length === 0}
 								<tr>
-									<td colspan="5" class="px-4 py-6 text-center text-app-muted">
+									<td colspan="6" class="px-4 py-6 text-center text-app-muted">
 										Sin envíos para este cliente.
 									</td>
 								</tr>
@@ -243,6 +276,11 @@
 										<td class="text-sm">{shipment.shipping_carrier || '—'}</td>
 										<td class="text-sm">{shipment.tracking_number || '—'}</td>
 										<td class="text-sm text-app-secondary">{formatDate(shipment.created_at)}</td>
+										<td class="text-right">
+											<a href={`/admin/shipments/${shipment.shipment_id}`}>
+												<Button variant="ghost" size="sm">Ver</Button>
+											</a>
+										</td>
 									</tr>
 								{/each}
 							{/if}

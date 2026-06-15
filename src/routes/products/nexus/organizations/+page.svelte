@@ -5,9 +5,12 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import { OrganizationsService } from '$lib/services/organizations';
 	import { toast } from '$lib/stores/toast';
+	import { onMount } from 'svelte';
 
 	/** @type {import('$lib/services/organizations').Organization[]} */
 	let organizations = $state([]);
+	/** @type {{ total?: number, by_status?: Record<string, number> } | null} */
+	let stats = $state(null);
 	let isLoading = $state(false);
 	let searchTerm = $state('');
 	let statusFilter = $state('');
@@ -54,6 +57,14 @@
 		statusFilter;
 		loadOrganizations();
 	});
+
+	onMount(async () => {
+		try {
+			stats = await OrganizationsService.getStats();
+		} catch {
+			stats = null;
+		}
+	});
 </script>
 
 <div class="flex min-h-screen flex-col bg-app text-app">
@@ -64,6 +75,27 @@
 	</Topbar>
 
 	<div class="mx-auto w-full max-w-7xl space-y-6 p-6">
+		{#if stats}
+			<div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+				<Card class="p-4">
+					<p class="text-xs uppercase tracking-wide text-app-muted">Total</p>
+					<p class="mt-1 text-2xl font-bold text-app">{stats.total ?? 0}</p>
+				</Card>
+				<Card class="p-4">
+					<p class="text-xs uppercase tracking-wide text-app-muted">Activas</p>
+					<p class="mt-1 text-2xl font-bold text-app">{stats.by_status?.active ?? 0}</p>
+				</Card>
+				<Card class="p-4">
+					<p class="text-xs uppercase tracking-wide text-app-muted">Pendientes</p>
+					<p class="mt-1 text-2xl font-bold text-app">{stats.by_status?.pending ?? 0}</p>
+				</Card>
+				<Card class="p-4">
+					<p class="text-xs uppercase tracking-wide text-app-muted">Suspendidas</p>
+					<p class="mt-1 text-2xl font-bold text-app">{stats.by_status?.suspended ?? 0}</p>
+				</Card>
+			</div>
+		{/if}
+
 		<Card class="p-4">
 			<div class="flex flex-wrap items-end gap-4">
 				<div class="min-w-[200px] flex-1">

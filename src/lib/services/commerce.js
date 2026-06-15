@@ -43,10 +43,11 @@ export const CommerceService = {
 	async getByAccount(accountId) {
 		const clientId = toCommercialClientId(accountId);
 
-		const [orders, payments, shipments] = await Promise.all([
+		const [orders, payments, shipments, summary] = await Promise.all([
 			OrdersService.getByClient(clientId),
 			PaymentsService.getByClient(clientId),
-			ShipmentsService.getByClient(clientId)
+			ShipmentsService.getByClient(clientId),
+			CommerceService.getSummary(accountId).catch(() => null)
 		]);
 
 		return {
@@ -54,7 +55,7 @@ export const CommerceService = {
 			orders,
 			payments,
 			shipments,
-			summary: null
+			summary
 		};
 	}
 };

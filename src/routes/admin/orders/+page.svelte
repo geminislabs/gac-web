@@ -6,10 +6,13 @@
 	import { onMount } from 'svelte';
 	import { OrdersService } from '$lib/services/orders';
 	import { toast } from '$lib/stores/toast';
+	import { auth } from '$lib/stores/auth';
+	import { canAccessNexus } from '$lib/utils/roles';
 
 	/** @type {import('$lib/services/orders').Order[]} */
 	let orders = $state([]);
 	let isLoading = $state(true);
+	let showNexusLink = $derived(canAccessNexus($auth.user));
 	let searchQuery = $state('');
 	let statusFilter = $state('');
 	let currentPage = $state(1);
@@ -108,7 +111,11 @@
 </svelte:head>
 
 <div class="flex min-h-screen flex-col bg-app text-app">
-	<Topbar title="Órdenes" subtitle="Listado de órdenes registradas en el sistema" backUrl="/" />
+	<Topbar title="Órdenes" subtitle="Listado de órdenes registradas en el sistema" backUrl="/">
+		<a href="/admin/orders/create">
+			<Button variant="primary" size="sm">Nueva orden</Button>
+		</a>
+	</Topbar>
 
 	<div class="mx-auto w-full max-w-7xl space-y-6 p-6">
 		<Card padding>
@@ -168,8 +175,18 @@
 							{#each paginated() as order (order.order_id)}
 								<tr>
 									<td class="font-mono text-xs text-app">{order.order_id.slice(0, 8)}…</td>
-									<td class="font-mono text-xs text-app-secondary">
-										{order.client_id.slice(0, 8)}…
+									<td class="font-mono text-xs">
+										{#if showNexusLink}
+											<a
+												href={`/products/nexus/accounts/${order.client_id}`}
+												class="text-accent hover:underline"
+												title={order.client_id}
+											>
+												{order.client_id.slice(0, 8)}…
+											</a>
+										{:else}
+											<span class="text-app-secondary">{order.client_id.slice(0, 8)}…</span>
+										{/if}
 									</td>
 									<td>
 										<span class={statusBadgeClass(order.status)}>{order.status}</span>
