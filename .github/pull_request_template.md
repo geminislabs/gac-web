@@ -17,7 +17,7 @@
 
 - [ ] **Base branch:** `develop` (no `master`)
 - [ ] Mi código sigue las convenciones del proyecto
-- [ ] Corrí `npm run validate` (lint + check + test + build)
+- [ ] Corrí `npm run validate` (lint + check + test:coverage + build)
 - [ ] Actualicé `CHANGELOG.md` en `[Unreleased]` (si el cambio es visible para usuarios o release notes)
 - [ ] Actualicé documentación relevante (si aplica)
 - [ ] Probé en al menos un navegador (si hay cambios de UI)

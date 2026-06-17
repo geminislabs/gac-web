@@ -45,11 +45,11 @@ Antes de modificar integraciones con backend, lee `docs/architecture/modules/REA
 npm run validate
 ```
 
-Equivalente: `npm run lint`, `npm run check`, `npm run test`, `npm run build`.
+Equivalente: `npm run lint`, `npm run check`, `npm run test:coverage`, `npm run build`.
 
 ## Módulos sensibles
 
-Trata con cuidado extra (revisión humana; tests en fases posteriores):
+Trata con cuidado extra (revisión humana; tests en `src/lib/**/*.test.js`):
 
 - `src/lib/services/api.js` — capa HTTP, refresh token
 - `src/lib/stores/auth.js` — sesión en `localStorage`
@@ -77,12 +77,13 @@ Referencias: variables en workflows de CI/deploy y `Dockerfile`.
 - Arquitectura por módulo: [docs/architecture/modules/](docs/architecture/modules/)
 - ADRs: [docs/adr/](docs/adr/)
 - Threat model: [docs/security/threat-model.md](docs/security/threat-model.md)
+- Governance: [docs/GOVERNANCE.md](docs/GOVERNANCE.md)
 
 ## Release y changelog
 
 - **Changelog:** `CHANGELOG.md` — actualizar `[Unreleased]` en PRs con cambios de release note
 - **Pre-push:** valida rama y presencia de changelog vs `origin/develop`
-- **CI:** `.github/workflows/ci.yml` — lint, check, unit tests, build, audit (informativo), Gitleaks, Semgrep; e2e smoke (informativo)
+- **CI:** `.github/workflows/ci.yml` — lint, check, coverage, build, audit; Gitleaks, Semgrep, OSV; e2e smoke (blocking)
 - **Deploy:** `.github/workflows/deploy.yml` — solo tags `v*.*.*`; ver [docs/RELEASE.md](docs/RELEASE.md)
 
 ## PRs

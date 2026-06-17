@@ -48,17 +48,26 @@ export default defineConfig(({ mode }) => {
 			exclude: ['src/**/*.svelte.{test,spec}.{js,ts}', 'e2e/**'],
 			coverage: {
 				provider: 'v8',
-				reporter: ['text', 'html'],
+				reporter: ['text', 'json', 'html', 'lcov'],
 				reportsDirectory: './coverage',
 				include: ['src/lib/**'],
 				exclude: [
 					'src/routes/**',
 					'src/lib/components/**',
+					'src/lib/index.js',
 					'src/**/*.spec.{js,ts}',
 					'src/**/*.test.{js,ts}',
+					'src/app.html',
+					'src/app.css',
 					'**/*.config.{js,ts}',
 					'**/vitest-setup*'
-				]
+				],
+				thresholds: {
+					lines: 90,
+					functions: 90,
+					branches: 70,
+					statements: 90
+				}
 			}
 		},
 		build: {
