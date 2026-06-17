@@ -22,3 +22,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `npm run validate` shortcut: lint + check + build
 - Node.js 22 as target runtime in CI and `.nvmrc` (Dockerfile base image unchanged in this PR)
 - Minor type fixes in `Input.svelte`, `billing.js`, and shipments detail page so `svelte-check` passes in CI
+- CI: inject `PUBLIC_*` env vars before `svelte-check` (with localhost fallbacks)

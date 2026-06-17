@@ -35,6 +35,16 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ github.token }}
 
+      - name: Prepare public env for SvelteKit
+        run: |
+          echo "PUBLIC_GAC_API_URL=${PUBLIC_GAC_API_URL:-http://127.0.0.1:8000}" >> "$GITHUB_ENV"
+          echo "PUBLIC_SISCOM_ADMIN_API_URL=${PUBLIC_SISCOM_ADMIN_API_URL:-http://127.0.0.1:8001}" >> "$GITHUB_ENV"
+          echo "PUBLIC_SISCOM_API_URL=${PUBLIC_SISCOM_API_URL:-http://127.0.0.1:8080}" >> "$GITHUB_ENV"
+        env:
+          PUBLIC_GAC_API_URL: ${{ vars.PUBLIC_GAC_API_URL }}
+          PUBLIC_SISCOM_ADMIN_API_URL: ${{ vars.PUBLIC_SISCOM_ADMIN_API_URL }}
+          PUBLIC_SISCOM_API_URL: ${{ vars.PUBLIC_SISCOM_API_URL }}
+
       - name: Run linter
         run: npm run lint
 
@@ -43,9 +53,6 @@ jobs:
 
       - name: Build application
         env:
-          PUBLIC_GAC_API_URL: ${{ vars.PUBLIC_GAC_API_URL }}
-          PUBLIC_SISCOM_ADMIN_API_URL: ${{ vars.PUBLIC_SISCOM_ADMIN_API_URL }}
-          PUBLIC_SISCOM_API_URL: ${{ vars.PUBLIC_SISCOM_API_URL }}
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
         run: npm run build
 
