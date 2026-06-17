@@ -52,7 +52,7 @@ export const BillingService = {
 	async listPayments(organizationId, filters = {}) {
 		const params = new URLSearchParams();
 		Object.entries(filters).forEach(([key, value]) => {
-			if (value != null && value !== '') params.append(key, String(value));
+			if (value != null && String(value) !== '') params.append(key, String(value));
 		});
 		const qs = params.toString() ? `?${params.toString()}` : '';
 		const response = await internalApi(
@@ -68,7 +68,7 @@ export const BillingService = {
 	async listInvoices(organizationId, filters = {}) {
 		const params = new URLSearchParams();
 		Object.entries(filters).forEach(([key, value]) => {
-			if (value != null && value !== '') params.append(key, String(value));
+			if (value != null && String(value) !== '') params.append(key, String(value));
 		});
 		const qs = params.toString() ? `?${params.toString()}` : '';
 		const response = await internalApi(

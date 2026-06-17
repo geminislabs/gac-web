@@ -13,7 +13,7 @@
 	let { plan: initialPlan, onSave } = $props();
 
 	/** @type {import('$lib/services/plans').Plan} */
-	let plan = $state(structuredClone(initialPlan));
+	let plan = $state(structuredClone(untrack(() => initialPlan)));
 	let isSaving = $state(false);
 
 	/** @type {any[]} */

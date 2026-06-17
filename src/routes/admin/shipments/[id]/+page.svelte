@@ -96,7 +96,10 @@
 		return parts.length > 0 ? parts.join(', ') : JSON.stringify(address, null, 2);
 	}
 
-	let addressLine = $derived(shipment ? formatAddress(shipment.address) : null);
+	let addressLine = $derived.by(() => {
+		if (!shipment?.address) return null;
+		return formatAddress(shipment.address);
+	});
 
 	onMount(loadShipment);
 </script>
