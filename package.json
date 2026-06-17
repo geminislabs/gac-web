@@ -30,7 +30,7 @@
 		"@playwright/test": "^1.56.1",
 		"@vitest/coverage-v8": "^3.2.4",
 		"@commitlint/cli": "^19.8.1",
-		"@commitlint/config-conventional": "^19.8.1",
+		"@commitlint/config-conventional": "^21.0.2",
 		"@eslint/js": "^9.39.1",
 		"@sveltejs/adapter-node": "^5.4.0",
 		"@sveltejs/kit": "^2.48.5",
