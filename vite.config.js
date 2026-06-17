@@ -40,6 +40,27 @@ export default defineConfig(({ mode }) => {
 
 	return {
 		plugins: [tailwindcss(), sveltekit()],
+		test: {
+			environment: 'happy-dom',
+			globals: true,
+			setupFiles: ['./vitest-setup.js'],
+			include: ['src/**/*.{test,spec}.{js,ts}'],
+			exclude: ['src/**/*.svelte.{test,spec}.{js,ts}', 'e2e/**'],
+			coverage: {
+				provider: 'v8',
+				reporter: ['text', 'html'],
+				reportsDirectory: './coverage',
+				include: ['src/lib/**'],
+				exclude: [
+					'src/routes/**',
+					'src/lib/components/**',
+					'src/**/*.spec.{js,ts}',
+					'src/**/*.test.{js,ts}',
+					'**/*.config.{js,ts}',
+					'**/vitest-setup*'
+				]
+			}
+		},
 		build: {
 			rollupOptions: {
 				external: ['@jesusCabrera84/map-engine']

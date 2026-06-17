@@ -45,7 +45,7 @@ Antes de modificar integraciones con backend, lee `docs/architecture/modules/REA
 npm run validate
 ```
 
-Equivalente: `npm run lint`, `npm run check`, `npm run build`.
+Equivalente: `npm run lint`, `npm run check`, `npm run test`, `npm run build`.
 
 ## Módulos sensibles
 
@@ -75,12 +75,14 @@ Referencias: variables en workflows de CI/deploy y `Dockerfile`.
 - Contribución: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Seguridad: [SECURITY.md](SECURITY.md)
 - Arquitectura por módulo: [docs/architecture/modules/](docs/architecture/modules/)
+- ADRs: [docs/adr/](docs/adr/)
+- Threat model: [docs/security/threat-model.md](docs/security/threat-model.md)
 
 ## Release y changelog
 
 - **Changelog:** `CHANGELOG.md` — actualizar `[Unreleased]` en PRs con cambios de release note
 - **Pre-push:** valida rama y presencia de changelog vs `origin/develop`
-- **CI:** `.github/workflows/ci.yml` — lint, check, build, audit (informativo), Gitleaks, Semgrep
+- **CI:** `.github/workflows/ci.yml` — lint, check, unit tests, build, audit (informativo), Gitleaks, Semgrep; e2e smoke (informativo)
 - **Deploy:** `.github/workflows/deploy.yml` — solo tags `v*.*.*`; ver [docs/RELEASE.md](docs/RELEASE.md)
 
 ## PRs

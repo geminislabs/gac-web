@@ -59,7 +59,7 @@ chore: add CONTRIBUTING guidelines
 Ejecuta localmente:
 
 ```bash
-npm run validate   # lint + check + build (atajo recomendado)
+npm run validate   # lint + check + test + build (atajo recomendado)
 ```
 
 Equivalente manual:
@@ -67,12 +67,15 @@ Equivalente manual:
 ```bash
 npm run lint       # prettier + eslint
 npm run check      # svelte-check
+npm run test       # vitest (unit)
 npm run build      # build de producción
 ```
 
 Opcional pero recomendado:
 
 ```bash
+npm run test:coverage   # reporte de cobertura (sin umbrales bloqueantes aún)
+npm run test:e2e        # smoke Playwright (requiere: npx playwright install chromium)
 npm run audit           # vulnerabilidades npm (nivel high+)
 npm run scan:secrets    # Gitleaks sobre archivos en git (`.env` local está en .gitignore)
 ```
@@ -95,10 +98,11 @@ No omitas hooks con `--no-verify` salvo emergencia justificada.
 
 En cada PR y push a `develop`/`master`:
 
-| Job        | Qué hace                         |
-| ---------- | -------------------------------- |
-| `quality`  | lint, svelte-check, build, audit |
-| `security` | Gitleaks + Semgrep               |
+| Job        | Qué hace                                     |
+| ---------- | -------------------------------------------- |
+| `quality`  | lint, svelte-check, unit tests, build, audit |
+| `e2e`      | smoke Playwright (informativo)               |
+| `security` | Gitleaks + Semgrep                           |
 
 El deploy a EC2 solo ocurre con tags `v*.*.*` (ver [docs/RELEASE.md](docs/RELEASE.md)).
 
