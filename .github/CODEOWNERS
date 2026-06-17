@@ -1,0 +1,25 @@
+# Default reviewers — replace @geminislabs/engineering with your GitHub team slug
+* @geminislabs/engineering
+
+# Authentication and HTTP layer
+/src/lib/services/api.js @geminislabs/engineering
+/src/lib/stores/auth.js @geminislabs/engineering
+/src/routes/login/ @geminislabs/engineering
+
+# Billing and commerce
+/src/lib/services/billing.js @geminislabs/engineering
+/src/lib/services/commerce.js @geminislabs/engineering
+/src/lib/services/payments.js @geminislabs/engineering
+/src/routes/admin/ @geminislabs/engineering
+
+# Nexus modules
+/src/routes/products/nexus/ @geminislabs/engineering
+/src/lib/services/organizations.js @geminislabs/engineering
+/src/lib/services/clients.js @geminislabs/engineering
+/src/lib/services/devices.js @geminislabs/engineering
+
+# CI/CD and release
+/.github/workflows/ @geminislabs/engineering
+/.github/dependabot.yml @geminislabs/engineering
+/scripts/ @geminislabs/engineering
+/Dockerfile @geminislabs/engineering

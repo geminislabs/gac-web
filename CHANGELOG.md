@@ -21,12 +21,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ADRs (`docs/adr/0001`–`0003`) and `docs/security/threat-model.md`
 - GitHub issue templates (bug, feature, security contact link)
 - CI job `e2e` (informational, `continue-on-error: true`)
+- Phase 3 quality gates: coverage thresholds (90% lines/statements/functions on `src/lib/**`), blocking e2e and audit CI jobs
+- Expanded unit tests for `api.js`, `auth.js`, stores, and service modules
+- `scripts/osv-scan.sh`, `npm run scan:osv`, OSV-Scanner in CI `security` job
+- `.github/CODEOWNERS`, `docs/GOVERNANCE.md`, `.github/dependabot.yml`
+- CI uploads coverage artifact from `test:coverage`
 
 ### Changed
 
 - Split monolithic GitHub Actions workflow into `ci.yml` (quality gates) and `deploy.yml` (releases)
-- `npm run validate` shortcut: lint + check + test + build
-- Node.js 22 as target runtime in CI and `.nvmrc` (Dockerfile base image unchanged in this PR)
+- `npm run validate` shortcut: lint + check + test:coverage + build
+- Node.js 22 as target runtime in CI, `.nvmrc`, and `Dockerfile` base image
 - Minor type fixes in `Input.svelte`, `billing.js`, and shipments detail page so `svelte-check` passes in CI
 - CI: inject `PUBLIC_*` env vars before `svelte-check` (with localhost fallbacks)
 - CI `quality` job runs unit tests after `svelte-check`
