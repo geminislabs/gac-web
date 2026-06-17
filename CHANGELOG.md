@@ -15,11 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Separate `deploy.yml` for tag-based EC2 deployments (`v*.*.*` only)
 - `scripts/gitleaks-scan.sh` and `npm run scan:secrets` (free CLI; no Gitleaks Action license required)
 - Pull request template with base-branch and validate checklist
+- Dev container (`.devcontainer/`) with post-create setup from `.env.example`
+- Vitest unit tests for `roles`, `apiErrors`, `nexusStatus`, `commercialClient` utils
+- Playwright smoke e2e (`e2e/smoke.spec.js`) — login redirect and sign-in UI
+- ADRs (`docs/adr/0001`–`0003`) and `docs/security/threat-model.md`
+- GitHub issue templates (bug, feature, security contact link)
+- CI job `e2e` (informational, `continue-on-error: true`)
 
 ### Changed
 
 - Split monolithic GitHub Actions workflow into `ci.yml` (quality gates) and `deploy.yml` (releases)
-- `npm run validate` shortcut: lint + check + build
+- `npm run validate` shortcut: lint + check + test + build
 - Node.js 22 as target runtime in CI and `.nvmrc` (Dockerfile base image unchanged in this PR)
 - Minor type fixes in `Input.svelte`, `billing.js`, and shipments detail page so `svelte-check` passes in CI
 - CI: inject `PUBLIC_*` env vars before `svelte-check` (with localhost fallbacks)
+- CI `quality` job runs unit tests after `svelte-check`

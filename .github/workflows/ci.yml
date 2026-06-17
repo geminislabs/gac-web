@@ -51,6 +51,9 @@ jobs:
       - name: Run type check
         run: npm run check
 
+      - name: Run unit tests
+        run: npm run test
+
       - name: Build application
         env:
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
@@ -59,6 +62,44 @@ jobs:
       - name: Audit dependencies
         continue-on-error: true
         run: npm run audit
+
+  e2e:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+          registry-url: https://npm.pkg.github.com
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+
+      - name: Prepare public env for SvelteKit
+        run: |
+          echo "PUBLIC_GAC_API_URL=${PUBLIC_GAC_API_URL:-http://127.0.0.1:8000}" >> "$GITHUB_ENV"
+          echo "PUBLIC_SISCOM_ADMIN_API_URL=${PUBLIC_SISCOM_ADMIN_API_URL:-http://127.0.0.1:8001}" >> "$GITHUB_ENV"
+          echo "PUBLIC_SISCOM_API_URL=${PUBLIC_SISCOM_API_URL:-http://127.0.0.1:8080}" >> "$GITHUB_ENV"
+        env:
+          PUBLIC_GAC_API_URL: ${{ vars.PUBLIC_GAC_API_URL }}
+          PUBLIC_SISCOM_ADMIN_API_URL: ${{ vars.PUBLIC_SISCOM_ADMIN_API_URL }}
+          PUBLIC_SISCOM_API_URL: ${{ vars.PUBLIC_SISCOM_API_URL }}
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run smoke e2e tests
+        env:
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+        run: npm run test:e2e
 
   security:
     runs-on: ubuntu-latest
