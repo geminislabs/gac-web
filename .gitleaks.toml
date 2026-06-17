@@ -1,0 +1,22 @@
+title = "gac-web"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Build artifacts, vendor paths, and docs with intentional placeholder tokens"
+paths = [
+	'''(?:^|/)node_modules/''',
+	'''(?:^|/)\.svelte-kit/''',
+	'''(?:^|/)build/''',
+	'''(?:^|/)coverage/''',
+	'''(?:^|/)dist/''',
+	'''(?:^|/)docs/architecture/modules/''',
+	'''(?:^|/)api_reference\.md$''',
+	'''(?:^|/)\.env(?:\..*)?$''',
+]
+regexes = [
+	'''example\.com''',
+	'''localhost''',
+	'''127\.0\.0\.1''',
+]

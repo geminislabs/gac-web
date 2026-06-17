@@ -10,16 +10,20 @@
 	 * 	id?: string,
 	 * 	type?: string,
 	 * 	placeholder?: string,
-	 * 	value?: string,
+	 * 	value?: string | number,
 	 * 	error?: string,
 	 * 	required?: boolean,
 	 * 	disabled?: boolean,
 	 * 	autocomplete?: any,
 	 * 	class?: string,
 	 * 	inputClass?: string,
+	 * 	min?: string | number,
+	 * 	max?: string | number,
+	 * 	step?: string | number,
 	 * 	oninput?: (event: Event) => void,
 	 * 	onchange?: (event: Event) => void,
-	 * 	onblur?: (event: FocusEvent) => void
+	 * 	onblur?: (event: FocusEvent) => void,
+	 * 	onkeydown?: (event: KeyboardEvent) => void
 	 * }} */
 	let {
 		label,
@@ -33,9 +37,13 @@
 		autocomplete = undefined,
 		class: className = '',
 		inputClass = '',
+		min = undefined,
+		max = undefined,
+		step = undefined,
 		oninput,
 		onchange,
-		onblur
+		onblur,
+		onkeydown
 	} = $props();
 </script>
 
@@ -52,11 +60,15 @@
 		{placeholder}
 		{required}
 		{disabled}
+		{min}
+		{max}
+		{step}
 		autocomplete={autocomplete ?? null}
 		bind:value
 		{oninput}
 		{onchange}
 		{onblur}
+		{onkeydown}
 		aria-invalid={error ? 'true' : undefined}
 		aria-describedby={error && id ? `${id}-error` : undefined}
 		class="gac-input {error ? 'gac-input--error' : ''} {inputClass}"

@@ -26,4 +26,6 @@ vite.config.ts.timestamp-*
 .idea
 .qodo
 
+.cache/
+
 graphify*
