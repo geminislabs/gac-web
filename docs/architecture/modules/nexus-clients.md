@@ -24,6 +24,28 @@ Permite listar, consultar y obtener estadísticas de clientes que utilizan servi
 | /api/v1/internal/clients/stats | GET    | Obtener estadísticas de clientes |
 | /api/v1/internal/clients/{id}  | GET    | Obtener detalles de un cliente   |
 
+### 🔹 SISCOM Admin API (Marca y reventa, B4)
+
+Tarjeta «Marca y reventa» del detalle de cuenta (`/products/nexus/accounts/{id}`,
+`AccountBrandSection.svelte`). Requiere `siscom-admin-api#154`.
+
+| Endpoint                                           | Método | Uso                                                       |
+| -------------------------------------------------- | ------ | --------------------------------------------------------- |
+| /api/v1/internal/accounts/{id}                     | GET    | Incluye `account_type` y `parent_account_id`              |
+| /api/v1/internal/accounts/{id}                     | PATCH  | `account_type`: `RESELLER` (marca) o `CUSTOMER`           |
+| /api/v1/internal/accounts/{id}/capabilities        | GET    | Capabilities comerciales: valor propio, efectivo y origen |
+| /api/v1/internal/accounts/{id}/capabilities/{code} | PUT    | Fija el valor propio (crea o reemplaza la fila)           |
+| /api/v1/internal/accounts/{id}/capabilities/{code} | DELETE | Quita la fila: la cuenta vuelve a heredar                 |
+
+- Cambiar el tipo no concede nada: la marca propia la da `white_label_enabled` y la
+  reventa `can_resell`.
+- Un valor que pide más que el de una cuenta superior se guarda, pero rige recortado:
+  la tabla muestra el valor propio, el que rige y quién lo recorta.
+- El owner de la cuenta ve «Marca» en Nexus cuando la cuenta es `RESELLER`, no tiene
+  padre y `white_label_enabled` rige en verdadero (la tarjeta lo resume).
+- Lo valida y lo audita el backend (`account_events`, con el usuario de GAC en
+  `metadata`); la tarjeta convierte los tipos porque el backend no lo hace.
+
 **Parámetros de consulta (GET /internal/clients):**
 
 - `limit`: Número máximo de resultados (default: 100)

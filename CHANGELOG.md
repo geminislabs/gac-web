@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Tarjeta «Marca y reventa» en el detalle de cuenta Nexus (B4): convertir la cuenta en marca (`RESELLER`) o regresarla a cliente final, y fijar o quitar sus capabilities comerciales (marca propia, reventa, subcuentas y dominios máximos) con motivo opcional. Muestra el valor propio, el que rige tras el techo de las cuentas superiores y quién lo recorta, y si su owner ya ve «Marca» en Nexus. Requiere `siscom-admin-api#154`
+
 ### Changed
 
 - `docs/RELEASE.md` gana el paso de espejo —`git push origin develop:master`, para que `master` siga significando «lo que está en producción»— y una sección de **dependencias entre repos**: cuando una release necesita un cambio de API que aún no está desplegado, la API va primero y se dice en el mensaje del tag. El caso del 9/09 queda escrito: `v1.7.4` exigía `siscom-admin-api v1.29.1`, y sacar la consola antes habría dado 401 en Asignación con un despliegue en verde.

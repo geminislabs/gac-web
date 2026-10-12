@@ -12,6 +12,7 @@
 	import { goto } from '$app/navigation';
 	import { nexusServiceBadge, nexusServiceDetailLine } from '$lib/utils/nexusStatus';
 	import AccountCommerceSection from '$lib/components/nexus/AccountCommerceSection.svelte';
+	import AccountBrandSection from '$lib/components/nexus/AccountBrandSection.svelte';
 	import { toCommercialClientId } from '$lib/utils/commercialClient';
 
 	let clientId = $derived($page.params.id);
@@ -203,6 +204,14 @@
 				</table>
 			</div>
 		</Card>
+
+		{#if clientId && !isLoading}
+			<AccountBrandSection
+				accountId={clientId}
+				account={client}
+				onAccountChange={(patch) => (client = { ...client, ...patch })}
+			/>
+		{/if}
 
 		{#if clientId}
 			<AccountCommerceSection accountId={clientId} />
