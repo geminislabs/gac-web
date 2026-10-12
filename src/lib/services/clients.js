@@ -21,6 +21,24 @@ import { internalApi } from '$lib/services/api';
  * @property {string} [expires_at]
  * @property {string} created_at
  * @property {string} [updated_at]
+ * @property {'PLATFORM' | 'RESELLER' | 'CUSTOMER'} [account_type] Desde siscom-admin-api#154
+ * @property {string | null} [parent_account_id]
+ */
+
+/**
+ * Capability comercial de una cuenta: la fila propia y el valor que rige
+ * después del techo de los ancestros (`GET /internal/accounts/{id}/capabilities`).
+ * @typedef {Object} AccountCapability
+ * @property {string} code
+ * @property {'bool' | 'int' | 'text'} value_type
+ * @property {string} [description]
+ * @property {boolean | number | string | null} own_value
+ * @property {string | null} [reason]
+ * @property {string | null} [expires_at]
+ * @property {boolean} expired
+ * @property {boolean | number | string | null} effective_value
+ * @property {'cuenta' | 'ancestro' | 'default'} source
+ * @property {string | null} [limited_by]
  */
 
 /**
@@ -96,5 +114,59 @@ export const ClientsService = {
 		/** @type {any} */
 		const response = await internalApi(`/internal/accounts/${id}/organizations`);
 		return Array.isArray(response) ? response : response?.organizations || [];
+	},
+
+	// ── Marca y reventa (B4) ────────────────────────────────────────────────
+	// Solo con el token PASETO de GAC. Cambiar el tipo no concede nada: la
+	// marca propia la da `white_label_enabled` y la reventa `can_resell`.
+
+	/**
+	 * Convierte la cuenta en marca (`RESELLER`) o la regresa a cliente final.
+	 * @param {string} id
+	 * @param {'RESELLER' | 'CUSTOMER'} accountType
+	 */
+	async setAccountType(id, accountType) {
+		return internalApi(`/internal/accounts/${encodeURIComponent(id)}`, {
+			method: 'PATCH',
+			body: JSON.stringify({ account_type: accountType })
+		});
+	},
+
+	/**
+	 * Las capabilities comerciales de la cuenta, propias y efectivas.
+	 * @param {string} id
+	 * @returns {Promise<AccountCapability[]>}
+	 */
+	async getCapabilities(id) {
+		const response = await internalApi(`/internal/accounts/${encodeURIComponent(id)}/capabilities`);
+		return Array.isArray(response) ? response : [];
+	},
+
+	/**
+	 * Fija el valor propio de una capability (crea o reemplaza la fila).
+	 * @param {string} id
+	 * @param {string} code
+	 * @param {{ value: boolean | number | string, reason?: string | null, expires_at?: string | null }} body
+	 * @returns {Promise<AccountCapability>}
+	 */
+	async setCapability(id, code, body) {
+		return /** @type {Promise<AccountCapability>} */ (
+			internalApi(
+				`/internal/accounts/${encodeURIComponent(id)}/capabilities/${encodeURIComponent(code)}`,
+				{ method: 'PUT', body: JSON.stringify(body) }
+			)
+		);
+	},
+
+	/**
+	 * Quita la fila: la cuenta vuelve a heredar de sus ancestros.
+	 * @param {string} id
+	 * @param {string} code
+	 */
+	async removeCapability(id, code) {
+		return internalApi(
+			`/internal/accounts/${encodeURIComponent(id)}/capabilities/${encodeURIComponent(code)}`,
+			{ method: 'DELETE' }
+		);
 	}
 };

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Tarjeta «Marca y reventa» en el detalle de cuenta Nexus (B4): convertir la cuenta en marca (`RESELLER`) o regresarla a cliente final, y fijar o quitar sus capabilities comerciales (marca propia, reventa, subcuentas y dominios máximos) con motivo opcional. Muestra el valor propio, el que rige tras el techo de las cuentas superiores y quién lo recorta, y si su owner ya ve «Marca» en Nexus. Requiere `siscom-admin-api#154`
+
 ### Security
 
 - Dependencias con avisos publicados después del último CI de `develop` (14/09), que dejaban en rojo `quality` (`npm audit`) y `security` (OSV) en cualquier PR. `devalue` 5.8.1 → 5.9.4, que llega al navegador con SvelteKit (DoS y serialización de memoria compartida); `brace-expansion`, `fast-uri` y `source-map-js` a sus parches. `lint-staged` 15 → 17, porque su cadena `micromatch` → `braces` no tiene versión corregida. Se quita `@tailwindcss/typography`: ninguna vista usa `prose`, el CSS compilado sale idéntico byte a byte sin él, y fijaba `postcss-selector-parser` 6.0.10, que es vulnerable. El lock se reparó a mano contra el anterior para no perder los `@emnapi` que npm poda en macOS (`npm ci` verificado en macOS y en Linux)
