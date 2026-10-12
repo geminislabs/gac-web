@@ -5,7 +5,7 @@
    Capas (orden importa):
    1. tokens.css   → tipografía, espaciado, radios, sombras, z-index
    2. themes.css   → colores por tema (default, matrix, dgray, classic)
-   3. Tailwind v4  → preflight + utilities (con plugins forms/typography)
+   3. Tailwind v4  → preflight + utilities (con el plugin forms)
    4. base.css     → reset suave, tipografía, scrollbar custom
    5. components.css → patrones reutilizables (panel, card, btn, badge…)
    6. utilities.css  → utilities ligadas al tema (bg-app, text-app…)
@@ -17,7 +17,6 @@
 @import 'tailwindcss';
 
 @plugin '@tailwindcss/forms';
-@plugin '@tailwindcss/typography';
 
 /* Soporte legacy: algunas vistas usan la sintaxis `dark:` para variantes
    visuales. Mantenemos el variant custom alineado a Geminis Labs. */
