@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-10-12
+
 ### Added
 
-- Tarjeta «Marca y reventa» en el detalle de cuenta Nexus (B4): convertir la cuenta en marca (`RESELLER`) o regresarla a cliente final, y fijar o quitar sus capabilities comerciales (marca propia, reventa, subcuentas y dominios máximos) con motivo opcional. Muestra el valor propio, el que rige tras el techo de las cuentas superiores y quién lo recorta, y si su owner ya ve «Marca» en Nexus. Requiere `siscom-admin-api#154`
+- Tarjeta «Marca y reventa» en el detalle de cuenta Nexus (B4): convertir la cuenta en marca (`RESELLER`) o regresarla a cliente final, y fijar o quitar sus capabilities comerciales (marca propia, reventa, subcuentas y dominios máximos) con motivo opcional. Muestra el valor propio, el que rige tras el techo de las cuentas superiores y quién lo recorta, y si su owner ya ve «Marca» en Nexus. Requiere `siscom-admin-api` v1.55.0 (desplegada el 12/10)
 
 ### Security
 
