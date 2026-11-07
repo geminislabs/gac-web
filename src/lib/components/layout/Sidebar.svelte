@@ -28,6 +28,13 @@
 			section: 'main',
 			nexus: true
 		},
+		{
+			href: '/products/nexus/app-versions',
+			label: 'Versiones App',
+			icon: 'Smartphone',
+			section: 'main',
+			nexus: true
+		},
 		{ href: '/products/plans', label: 'Planes', icon: 'Tag', section: 'main', nexus: true },
 		{ href: '/sales/demos', label: 'Demos', icon: 'KeyRound', section: 'sales', demos: true },
 		{ href: '/admin/orders', label: 'Órdenes', icon: 'ShoppingCart', section: 'commerce' },

@@ -10,19 +10,20 @@ This documentation supports C4 container and component diagrams.
 
 ### APIs Consumidas por Módulo
 
-| Módulo                                  | GAC API                          | SISCOM Admin API                    | SISCOM API        | WebSocket | Otros |
-| --------------------------------------- | -------------------------------- | ----------------------------------- | ----------------- | --------- | ----- |
-| [auth](auth.md)                         | ✅ Login, Refresh, Me            | ✅ Internal Auth                    | -                 | -         | -     |
-| [dashboard](dashboard.md)               | ✅ Users                         | ✅ Devices, Clients Stats           | -                 | -         | -     |
-| [admin-users](admin-users.md)           | ✅ Users, Roles                  | -                                   | -                 | -         | -     |
-| [nexus-clients](nexus-clients.md)       | ✅ GAC Orders/Payments/Shipments | ✅ Internal Accounts, Orgs, Billing | -                 | -         | -     |
-| [nexus-organizations](nexus-clients.md) | -                                | ✅ Internal Organizations + Billing | -                 | -         | -     |
-| [nexus-devices](nexus-devices.md)       | -                                | ✅ Devices, Events                  | ✅ Communications | ✅ Stream | -     |
-| [nexus-commands](nexus-commands.md)     | -                                | ✅ Commands                         | -                 | -         | -     |
-| [nexus-trips](nexus-trips.md)           | -                                | ✅ Trips                            | -                 | -         | -     |
-| [orders](orders.md)                     | ✅ Orders                        | -                                   | -                 | -         | -     |
-| [products](products.md)                 | -                                | ✅ Internal Products                | -                 | -         | -     |
-| [payments](payments.md)                 | ✅ Payments                      | ✅ Org Billing (read)               | -                 | -         | -     |
+| Módulo                                      | GAC API                          | SISCOM Admin API                    | SISCOM API        | WebSocket | Otros |
+| ------------------------------------------- | -------------------------------- | ----------------------------------- | ----------------- | --------- | ----- |
+| [auth](auth.md)                             | ✅ Login, Refresh, Me            | ✅ Internal Auth                    | -                 | -         | -     |
+| [dashboard](dashboard.md)                   | ✅ Users                         | ✅ Devices, Clients Stats           | -                 | -         | -     |
+| [admin-users](admin-users.md)               | ✅ Users, Roles                  | -                                   | -                 | -         | -     |
+| [nexus-clients](nexus-clients.md)           | ✅ GAC Orders/Payments/Shipments | ✅ Internal Accounts, Orgs, Billing | -                 | -         | -     |
+| [nexus-organizations](nexus-clients.md)     | -                                | ✅ Internal Organizations + Billing | -                 | -         | -     |
+| [nexus-devices](nexus-devices.md)           | -                                | ✅ Devices, Events                  | ✅ Communications | ✅ Stream | -     |
+| [nexus-app-versions](nexus-app-versions.md) | ✅ Users                         | ✅ Client Version Policy & Installs | -                 | -         | -     |
+| [nexus-commands](nexus-commands.md)         | -                                | ✅ Commands                         | -                 | -         | -     |
+| [nexus-trips](nexus-trips.md)               | -                                | ✅ Trips                            | -                 | -         | -     |
+| [orders](orders.md)                         | ✅ Orders                        | -                                   | -                 | -         | -     |
+| [products](products.md)                     | -                                | ✅ Internal Products                | -                 | -         | -     |
+| [payments](payments.md)                     | ✅ Payments                      | ✅ Org Billing (read)               | -                 | -         | -     |
 
 ---
 
@@ -66,6 +67,7 @@ This documentation supports C4 container and component diagrams.
 
 - **[nexus-clients.md](nexus-clients.md)** - Gestión de clientes Nexus
 - **[nexus-devices.md](nexus-devices.md)** - Gestión de dispositivos GPS
+- **[nexus-app-versions.md](nexus-app-versions.md)** - Política de versiones móviles e instalaciones activas
 - **[nexus-commands.md](nexus-commands.md)** - Envío de comandos a dispositivos
 - **[nexus-trips.md](nexus-trips.md)** - Consulta de viajes y tracking
 

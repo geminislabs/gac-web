@@ -85,9 +85,13 @@ export async function api(endpoint, options = {}) {
 
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}));
-			throw new Error(
+			const error = new Error(
 				formatApiErrorMessage(errorData, `API Error: ${response.status} ${response.statusText}`)
 			);
+			error.status = response.status;
+			error.field = errorData?.field;
+			error.data = errorData;
+			throw error;
 		}
 
 		if (response.status === 204) return null;
@@ -153,12 +157,16 @@ export async function internalApi(endpoint, options = {}) {
 
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}));
-			throw new Error(
+			const error = new Error(
 				formatApiErrorMessage(
 					errorData,
 					`Internal API Error [${service}]: ${response.status} ${response.statusText}`
 				)
 			);
+			error.status = response.status;
+			error.field = errorData?.field;
+			error.data = errorData;
+			throw error;
 		}
 
 		if (response.status === 204) return null;

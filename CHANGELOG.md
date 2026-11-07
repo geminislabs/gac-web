@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Pantalla de gestión de política de versiones móviles Nexus en `/products/nexus/app-versions` (§3.3): visualización y edición de versión mínima soportada, última versión publicada, versiones revocadas/bloqueadas y URLs a tiendas oficiales (App Store y Google Play).
+- Servicio `AppVersionsService` (`src/lib/services/appVersions.js`) con métodos `getAll()`, `update()`, `getInstalls()` y `preview()` sobre endpoints de `siscom-admin-api` vía `internalApi`.
+- Modal de análisis de impacto previo (`preview`) con desglose de instalaciones activas (últimos 30 días) y salvaguarda de confirmación crítica obligatoria cuando `required > 0` para prevenir bloqueos accidentales en producción.
+- Documentación de arquitectura de módulo en `docs/architecture/modules/nexus-app-versions.md` y actualización del índice de dependencias de API.
+
 ## [1.8.0] - 2026-10-12
 
 ### Added
