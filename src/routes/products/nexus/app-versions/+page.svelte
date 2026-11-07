@@ -6,7 +6,13 @@
 	import { toast } from '$lib/stores/toast';
 	import { formatApiErrorMessage } from '$lib/utils/apiErrors';
 	import { userService } from '$lib/services/users';
-	import { AppVersionsService, validatePolicyClient } from '$lib/services/appVersions';
+	import {
+		AppVersionsService,
+		validatePolicyClient,
+		normalizePolicyPayload,
+		isConfirmationRequired,
+		isSaveConfirmed
+	} from '$lib/services/appVersions';
 	import { onMount } from 'svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 
@@ -32,54 +38,8 @@
 	let isLoading = $state(true);
 	let isSaving = $state(false);
 	let isPreviewing = $state(false);
-	let isMockMode = $state(false);
+	let loadError = $state('');
 	let generalError = $state('');
-
-	// Mock baseline dataset based on contract §3.2
-	const MOCK_POLICIES = {
-		ios: {
-			platform: 'ios',
-			min_supported_version: '1.0.0',
-			latest_version: '1.3.0',
-			blocked_versions: [],
-			store_url: 'https://apps.apple.com/app/id123456789',
-			updated_at: '2026-11-05T14:20:00Z',
-			updated_by: 'migracion 047'
-		},
-		android: {
-			platform: 'android',
-			min_supported_version: null,
-			latest_version: '1.2.0',
-			blocked_versions: ['1.1.3'],
-			store_url: 'https://play.google.com/store/apps/details?id=com.geminislabs.nexus',
-			updated_at: '2026-11-07T02:16:30Z',
-			updated_by: 'gac:5b1f8c12-3456-4789-a012-3456789abcde'
-		}
-	};
-
-	const MOCK_INSTALLS = {
-		ios: {
-			platform: 'ios',
-			days: 30,
-			total: 412,
-			versions: [
-				{ app_version: '1.1.0', installs: 300 },
-				{ app_version: '1.0.1', installs: 100 },
-				{ app_version: 'desconocida', installs: 12 }
-			]
-		},
-		android: {
-			platform: 'android',
-			days: 30,
-			total: 520,
-			versions: [
-				{ app_version: '1.2.0', installs: 350 },
-				{ app_version: '1.1.3', installs: 20 },
-				{ app_version: '1.1.0', installs: 130 },
-				{ app_version: 'desconocida', installs: 20 }
-			]
-		}
-	};
 
 	/** @type {Record<Platform, PlatformForm>} */
 	let forms = $state({
@@ -107,16 +67,22 @@
 		}
 	});
 
-	/** @type {Record<Platform, any>} */
+	/** @type {Record<Platform, import('$lib/services/appVersions').ClientVersionPolicy | null>} */
 	let originalPolicies = $state({
 		ios: null,
 		android: null
 	});
 
-	/** @type {Record<Platform, any>} */
+	/** @type {Record<Platform, import('$lib/services/appVersions').VersionInstallsResponse | null>} */
 	let installsData = $state({
 		ios: null,
 		android: null
+	});
+
+	/** @type {Record<Platform, string>} */
+	let installsErrors = $state({
+		ios: '',
+		android: ''
 	});
 
 	// Preview / Impact modal state
@@ -129,16 +95,16 @@
 	/** @type {SvelteMap<string, string>} */
 	const userDisplayCache = new SvelteMap();
 
+	let isDevMockActive = $derived(
+		Boolean(import.meta.env.DEV && AppVersionsService.isDevMockActive())
+	);
+
 	onMount(async () => {
-		const urlParams = new URLSearchParams(window.location.search);
-		if (urlParams.get('mock') === 'true' || urlParams.get('mock') === '1') {
-			isMockMode = true;
-		}
 		await loadData();
 	});
 
 	/**
-	 * Resuelve el texto legible de updated_by (ej. si es gac:<uuid>, busca en userService)
+	 * Resuelve el texto legible de updated_by (si es gac:<uuid>, consulta userService)
 	 * @param {string|null|undefined} raw
 	 * @returns {Promise<string>}
 	 */
@@ -166,27 +132,11 @@
 
 	async function loadData() {
 		isLoading = true;
+		loadError = '';
 		generalError = '';
 
 		try {
-			if (isMockMode) {
-				applyMockPolicies();
-				applyMockInstalls();
-				isLoading = false;
-				return;
-			}
-
-			let policies = [];
-			try {
-				policies = await AppVersionsService.getAll();
-			} catch (err) {
-				console.warn('Backend client-version-policy no respondió. Activando fallback mock.', err);
-				isMockMode = true;
-				applyMockPolicies();
-				applyMockInstalls();
-				isLoading = false;
-				return;
-			}
+			const policies = await AppVersionsService.getAll();
 
 			if (Array.isArray(policies)) {
 				for (const p of policies) {
@@ -206,52 +156,31 @@
 				}
 			}
 
-			// Cargar installs en paralelo
+			// Cargar métricas de instalaciones de ambas plataformas
 			await Promise.all([loadPlatformInstalls('ios'), loadPlatformInstalls('android')]);
 		} catch (err) {
-			generalError = formatApiErrorMessage(err, 'Error al cargar la política de versiones');
+			loadError = formatApiErrorMessage(err, 'Error al cargar la política de versiones');
 		} finally {
 			isLoading = false;
 		}
 	}
 
 	/**
+	 * Carga las instalaciones activas para una plataforma.
+	 * Si falla, muestra error en la sección sin inyectar datos simulados.
 	 * @param {Platform} platform
 	 */
 	async function loadPlatformInstalls(platform) {
+		installsErrors[platform] = '';
 		try {
-			if (isMockMode) {
-				installsData[platform] = MOCK_INSTALLS[platform];
-				return;
-			}
 			installsData[platform] = await AppVersionsService.getInstalls(platform, 30);
 		} catch (err) {
-			console.error(`Error cargando instalaciones de ${platform}:`, err);
-			installsData[platform] = MOCK_INSTALLS[platform];
+			installsData[platform] = null;
+			installsErrors[platform] = formatApiErrorMessage(
+				err,
+				'No se pudieron cargar las instalaciones'
+			);
 		}
-	}
-
-	function applyMockPolicies() {
-		for (const plat of ['ios', 'android']) {
-			const p = MOCK_POLICIES[/** @type {Platform} */ (plat)];
-			const target = forms[/** @type {Platform} */ (plat)];
-			originalPolicies[/** @type {Platform} */ (plat)] = JSON.parse(JSON.stringify(p));
-			target.min_supported_version = p.min_supported_version || '';
-			target.latest_version = p.latest_version || '';
-			target.store_url = p.store_url || '';
-			target.blocked_versions = [...p.blocked_versions];
-			target.updated_at = p.updated_at;
-			target.updated_by = p.updated_by;
-			target.updated_by_display =
-				p.updated_by === 'gac:5b1f8c12-3456-4789-a012-3456789abcde'
-					? 'Administrador Nexus (admin@geminislabs.com)'
-					: p.updated_by;
-		}
-	}
-
-	function applyMockInstalls() {
-		installsData.ios = MOCK_INSTALLS.ios;
-		installsData.android = MOCK_INSTALLS.android;
 	}
 
 	/**
@@ -288,44 +217,23 @@
 	}
 
 	/**
-	 * Construye el payload para PUT o Preview
+	 * Construye el payload normalizado para PUT o Preview (store_url vacío va como null)
 	 * @param {Platform} platform
 	 * @returns {import('$lib/services/appVersions').PolicyPayload}
 	 */
 	function buildPayload(platform) {
 		const form = forms[platform];
-		return {
-			min_supported_version: form.min_supported_version.trim() || null,
-			latest_version: form.latest_version.trim() || null,
-			blocked_versions: form.blocked_versions.map((v) => v.trim()).filter(Boolean),
-			store_url: form.store_url.trim()
-		};
+		return normalizePolicyPayload({
+			min_supported_version: form.min_supported_version,
+			latest_version: form.latest_version,
+			blocked_versions: form.blocked_versions,
+			store_url: form.store_url
+		});
 	}
 
 	/**
-	 * Verifica si el cambio sube el mínimo o agrega versiones bloqueadas
-	 * @param {Platform} platform
-	 */
-	function isStrictCriticalChange(platform) {
-		const form = forms[platform];
-		const orig = originalPolicies[platform];
-		if (!orig) return false;
-
-		const newMin = form.min_supported_version.trim() || null;
-		const oldMin = orig.min_supported_version || null;
-
-		// Si antes no había mínimo y ahora sí, o cambió
-		const minChanged = newMin !== oldMin && Boolean(newMin);
-
-		// Si se agregaron nuevas versiones bloqueadas que antes no estaban
-		const oldBlocked = new Set(orig.blocked_versions || []);
-		const addedBlocked = form.blocked_versions.some((v) => !oldBlocked.has(v));
-
-		return minChanged || addedBlocked;
-	}
-
-	/**
-	 * Al pulsar "Guardar", se valida en cliente y se llama a `preview`
+	 * Al pulsar "Guardar", se valida en cliente y se llama a `preview`.
+	 * Si preview falla, no se puede guardar y no se abre el modal.
 	 * @param {Platform} platform
 	 */
 	async function handleSaveClick(platform) {
@@ -347,59 +255,13 @@
 		confirmVersionTyped = '';
 
 		try {
-			if (isMockMode) {
-				if (
-					payload.store_url.includes('simular-422') ||
-					payload.min_supported_version === '4.2.2'
-				) {
-					const mock422 = new Error('store_url debe ser de apps.apple.com');
-					/** @type {any} */ (mock422).field = 'store_url';
-					/** @type {any} */ (mock422).status = 422;
-					throw mock422;
-				}
-
-				// Simulación de preview según datos de ejemplo del contrato
-				const installs = installsData[platform] || MOCK_INSTALLS[platform];
-				const total = installs.total || 412;
-				let required = 0;
-				let optional = 0;
-
-				/** @type {import('$lib/services/appVersions').PreviewVersionItem[]} */
-				const previewVersions = (installs.versions || []).map((v) => {
-					let updateStatus = /** @type {'required' | 'optional' | 'none'} */ ('none');
-					if (payload.blocked_versions.includes(v.app_version)) {
-						updateStatus = 'required';
-						required += v.installs;
-					} else if (payload.min_supported_version && v.app_version === '1.0.1') {
-						updateStatus = 'required';
-						required += v.installs;
-					} else if (payload.latest_version && v.app_version === '1.1.0') {
-						updateStatus = 'optional';
-						optional += v.installs;
-					}
-					return {
-						app_version: v.app_version,
-						installs: v.installs,
-						update: updateStatus
-					};
-				});
-
-				previewResult = {
-					platform,
-					days: 30,
-					total,
-					required,
-					optional,
-					versions: previewVersions
-				};
-			} else {
-				previewResult = await AppVersionsService.preview(platform, payload, 30);
-			}
-
+			previewResult = await AppVersionsService.preview(platform, payload, 30);
 			showImpactModal = true;
 		} catch (err) {
 			/** @type {any} */
 			const errorObj = err;
+			previewResult = null;
+			showImpactModal = false;
 			if (errorObj?.field) {
 				form.errors[errorObj.field] = errorObj.message || 'Valor inválido';
 			} else {
@@ -412,6 +274,7 @@
 
 	/**
 	 * Confirmación definitiva y ejecución de PUT /client-version-policy/{platform}
+	 * Solo invocable desde el modal de preview una vez satisfechas las salvaguardas.
 	 */
 	async function handleConfirmSave() {
 		if (!previewResult) return;
@@ -423,29 +286,19 @@
 		generalError = '';
 
 		try {
-			let updatedRow;
-			if (isMockMode) {
-				updatedRow = {
-					platform,
-					...payload,
-					updated_at: new Date().toISOString(),
-					updated_by: 'gac:admin-user-actual'
-				};
-			} else {
-				updatedRow = await AppVersionsService.update(platform, payload);
-			}
+			const updatedRow = await AppVersionsService.update(platform, payload);
 
 			// Actualizar estado en UI
 			originalPolicies[platform] = JSON.parse(JSON.stringify(updatedRow));
 			form.updated_at = updatedRow.updated_at || new Date().toISOString();
-			form.updated_by = updatedRow.updated_by || 'gac:admin-user-actual';
+			form.updated_by = updatedRow.updated_by || null;
 			form.updated_by_display = await resolveUpdatedBy(form.updated_by);
 
 			toast.success(`Política de ${platform.toUpperCase()} guardada correctamente`);
 			showImpactModal = false;
 			previewResult = null;
 
-			// Refrescar conteo de instalaciones
+			// Refrescar instalaciones
 			await loadPlatformInstalls(platform);
 		} catch (err) {
 			/** @type {any} */
@@ -485,15 +338,28 @@
 
 	let currentForm = $derived(forms[selectedPlatform]);
 	let currentInstalls = $derived(installsData[selectedPlatform]);
+	let currentInstallsError = $derived(installsErrors[selectedPlatform]);
+
+	// La evaluación de confirmación crítica en el modal evalúa previewResult.platform
+	let modalPlatform = $derived(previewResult ? previewResult.platform : selectedPlatform);
 	let isCritical = $derived(
-		Boolean(previewResult && previewResult.required > 0 && isStrictCriticalChange(selectedPlatform))
+		Boolean(
+			previewResult &&
+			isConfirmationRequired({
+				originalPolicy: originalPolicies[modalPlatform],
+				payload: buildPayload(modalPlatform),
+				preview: previewResult
+			})
+		)
 	);
 
 	let requiredConfirmed = $derived(
-		!isCritical ||
-			(confirmCriticalCheckbox &&
-				(!currentForm.min_supported_version ||
-					confirmVersionTyped.trim() === currentForm.min_supported_version.trim()))
+		isSaveConfirmed({
+			isCritical,
+			minSupportedVersion: forms[modalPlatform].min_supported_version,
+			confirmedCheckbox: confirmCriticalCheckbox,
+			typedVersion: confirmVersionTyped
+		})
 	);
 </script>
 
@@ -516,7 +382,7 @@
 				stroke-width="2"
 				stroke-linecap="round"
 				stroke-linejoin="round"
-				class="shrink-0 mt-0.5"
+				class="mt-0.5 shrink-0"
 			>
 				<circle cx="12" cy="12" r="10" />
 				<line x1="12" y1="16" x2="12" y2="12" />
@@ -531,26 +397,24 @@
 			</div>
 		</div>
 
-		{#if isMockMode}
+		{#if isDevMockActive}
 			<div
 				class="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-500"
 			>
 				<div class="flex items-center gap-2">
-					<span class="inline-block h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-					<span
-						>Modo Mock activo: simulando respuestas del contrato §3.2 para desarrollo y pruebas.</span
-					>
+					<span class="inline-block h-2 w-2 animate-pulse rounded-full bg-amber-500"></span>
+					<span>Modo Mock activo (desarrollo): simulando respuestas de AppVersionsService.</span>
 				</div>
-				<button
-					type="button"
-					class="underline hover:text-amber-400 text-xs"
-					onclick={() => {
-						isMockMode = false;
-						loadData();
-					}}
-				>
-					Reintentar backend real
-				</button>
+			</div>
+		{/if}
+
+		{#if loadError}
+			<div
+				class="rounded-lg border border-red-500/30 bg-red-500/10 p-6 text-sm text-danger space-y-3"
+			>
+				<p class="font-semibold text-base">Error al cargar la política de versiones</p>
+				<p>{loadError}</p>
+				<Button variant="secondary" size="sm" onclick={loadData}>Reintentar</Button>
 			</div>
 		{/if}
 
@@ -616,10 +480,10 @@
 		</div>
 
 		{#if isLoading}
-			<Card padding class="text-center py-12 text-app-muted">
+			<Card padding class="py-12 text-center text-app-muted">
 				Cargando configuración de versiones...
 			</Card>
-		{:else}
+		{:else if !loadError}
 			<div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
 				<!-- FORMULARIO DE POLÍTICA (2 columnas) -->
 				<div class="space-y-6 lg:col-span-2">
@@ -632,7 +496,7 @@
 								<h2 class="text-lg font-semibold text-app">
 									Política de {selectedPlatform.toUpperCase()}
 								</h2>
-								<p class="text-xs text-app-muted mt-1">
+								<p class="mt-1 text-xs text-app-muted">
 									Define el umbral de actualización obligatoria, aviso opcional y fichas oficiales.
 								</p>
 							</div>
@@ -659,7 +523,7 @@
 							/>
 							<p class="text-xs text-app-muted">
 								Las versiones <strong>inferiores</strong> a esta quedarán
-								<span class="text-danger font-medium">bloqueadas</span> con actualización obligatoria
+								<span class="font-medium text-danger">bloqueadas</span> con actualización obligatoria
 								hacia la tienda. Si se deja vacío, no habrá bloqueo mínimo general.
 							</p>
 						</div>
@@ -675,7 +539,7 @@
 							/>
 							<p class="text-xs text-app-muted">
 								Las versiones inferiores a esta mostrarán un
-								<span class="text-warning font-medium">aviso opcional</span> que el usuario puede descartar.
+								<span class="font-medium text-warning">aviso opcional</span> que el usuario puede descartar.
 							</p>
 						</div>
 
@@ -703,7 +567,7 @@
 							<label for="new_blocked_input" class="gac-label">
 								Versiones Específicas Bloqueadas (blocked_versions)
 							</label>
-							<p class="text-xs text-app-muted -mt-1">
+							<p class="-mt-1 text-xs text-app-muted">
 								Versiones que tienen fallos críticos conocidos. Serán
 								<strong class="text-danger">bloqueadas obligatoriamente</strong> incluso si son superiores
 								al mínimo.
@@ -749,12 +613,12 @@
 								{:else}
 									{#each currentForm.blocked_versions as version (version)}
 										<span
-											class="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-mono font-medium text-danger"
+											class="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 font-mono text-xs font-medium text-danger"
 										>
 											v{version}
 											<button
 												type="button"
-												class="hover:text-red-300 ml-0.5 rounded-full p-0.5"
+												class="ml-0.5 rounded-full p-0.5 hover:text-red-300"
 												onclick={() => handleRemoveBlockedVersion(selectedPlatform, version)}
 												title="Eliminar de lista de bloqueadas"
 												aria-label="Eliminar versión {version}"
@@ -792,13 +656,27 @@
 					<Card padding class="space-y-4">
 						<div class="border-b pb-3" style="border-color: var(--color-border)">
 							<h3 class="font-semibold text-app">Instalaciones Activas (30 días)</h3>
-							<p class="text-xs text-app-muted mt-0.5">
+							<p class="mt-0.5 text-xs text-app-muted">
 								Distribución de versiones observadas en {selectedPlatform.toUpperCase()}.
 							</p>
 						</div>
 
-						{#if !currentInstalls}
-							<p class="text-xs text-app-muted py-4 text-center">
+						{#if currentInstallsError}
+							<div
+								class="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-xs text-danger space-y-2"
+							>
+								<p class="font-medium">No se pudieron cargar las instalaciones</p>
+								<p>{currentInstallsError}</p>
+								<Button
+									variant="outline"
+									size="sm"
+									onclick={() => loadPlatformInstalls(selectedPlatform)}
+								>
+									Reintentar
+								</Button>
+							</div>
+						{:else if !currentInstalls}
+							<p class="py-4 text-center text-xs text-app-muted">
 								Cargando métricas de instalación...
 							</p>
 						{:else}
@@ -816,7 +694,7 @@
 											<span class="font-mono font-medium text-app">v{v.app_version}</span>
 											<span class="text-app-muted">{v.installs} inst. ({pct.toFixed(1)}%)</span>
 										</div>
-										<div class="h-2 w-full rounded-full bg-app-tertiary overflow-hidden">
+										<div class="h-2 w-full overflow-hidden rounded-full bg-app-tertiary">
 											<div
 												class="h-full rounded-full"
 												style="width: {pct}%; background: var(--color-accent);"
@@ -827,7 +705,7 @@
 							</div>
 
 							<p
-								class="text-[11px] text-app-muted italic border-t pt-3"
+								class="border-t pt-3 text-[11px] italic text-app-muted"
 								style="border-color: var(--color-border)"
 							>
 								Las versiones no identificadas como "desconocida" corresponden a clientes antiguos o
@@ -864,7 +742,7 @@
 	>
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 		<div
-			class="gac-modal max-w-2xl p-6 space-y-5"
+			class="gac-modal max-w-2xl space-y-5 p-6"
 			role="document"
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => e.stopPropagation()}
@@ -878,13 +756,13 @@
 					<h3 id="impact-modal-title" class="text-lg font-bold text-app">
 						Impacto de la Nueva Política ({previewResult.platform.toUpperCase()})
 					</h3>
-					<p class="text-xs text-app-muted mt-1">
+					<p class="mt-1 text-xs text-app-muted">
 						Simulación estimada sobre las {total} instalaciones activas de los últimos 30 días.
 					</p>
 				</div>
 				<button
 					type="button"
-					class="text-app-muted hover:text-app text-xl leading-none"
+					class="text-xl leading-none text-app-muted hover:text-app"
 					onclick={() => (showImpactModal = false)}
 					disabled={isSaving}
 				>
@@ -894,13 +772,13 @@
 
 			<!-- RESUMEN EN LENGUAJE CLARO -->
 			<div
-				class="rounded-lg p-4 text-sm space-y-2 border {requiredCount > 0
-					? 'bg-red-500/10 border-red-500/30 text-app'
-					: 'bg-app-tertiary border-border text-app'}"
+				class="space-y-2 rounded-lg border p-4 text-sm {requiredCount > 0
+					? 'border-red-500/30 bg-red-500/10 text-app'
+					: 'border-border bg-app-tertiary text-app'}"
 			>
 				<p>
 					Con esta política, <strong>{requiredCount} de {total}</strong> instalaciones activas ({reqPct}%)
-					<span class={requiredCount > 0 ? 'text-danger font-semibold' : ''}
+					<span class={requiredCount > 0 ? 'font-semibold text-danger' : ''}
 						>quedarán bloqueadas</span
 					>
 					hasta que el usuario actualice la app en la tienda, y
@@ -946,7 +824,7 @@
 
 			<!-- CONFIRMACIÓN EXPLÍCITA SI SUBE EL MÍNIMO O BLOQUEA CON required > 0 -->
 			{#if isCritical}
-				<div class="rounded-lg border border-red-500/40 bg-red-500/10 p-4 space-y-3">
+				<div class="space-y-3 rounded-lg border border-red-500/40 bg-red-500/10 p-4">
 					<div class="flex items-start gap-2 text-danger">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -958,7 +836,7 @@
 							stroke-width="2"
 							stroke-linecap="round"
 							stroke-linejoin="round"
-							class="shrink-0 mt-0.5"
+							class="mt-0.5 shrink-0"
 						>
 							<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
 							<line x1="12" y1="9" x2="12" y2="13" />
@@ -971,27 +849,27 @@
 						evitar bloqueos accidentales, confirma explícitamente:
 					</p>
 
-					<label class="flex items-center gap-2 cursor-pointer text-xs text-app font-medium">
+					<label class="flex cursor-pointer items-center gap-2 text-xs font-medium text-app">
 						<input
 							type="checkbox"
-							class="rounded border-border text-danger focus:ring-danger h-4 w-4"
+							class="h-4 w-4 rounded border-border text-danger focus:ring-danger"
 							bind:checked={confirmCriticalCheckbox}
 						/>
 						Confirmo que {requiredCount} instalaciones activas quedarán bloqueadas de inmediato.
 					</label>
 
-					{#if currentForm.min_supported_version}
+					{#if forms[modalPlatform].min_supported_version}
 						<div>
 							<label for="confirm_version_input" class="gac-label text-xs">
 								Escribe <span class="font-mono font-bold text-danger"
-									>{currentForm.min_supported_version}</span
+									>{forms[modalPlatform].min_supported_version}</span
 								> para confirmar el nuevo mínimo:
 							</label>
 							<input
 								id="confirm_version_input"
 								type="text"
 								class="gac-input text-xs"
-								placeholder={currentForm.min_supported_version}
+								placeholder={forms[modalPlatform].min_supported_version}
 								bind:value={confirmVersionTyped}
 								autocomplete="off"
 							/>

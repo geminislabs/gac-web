@@ -42,8 +42,8 @@ Todas las llamadas se autentican con token PASETO interno vía `internalApi` (`s
 ### 1. Consulta y visualización inicial
 
 1. El usuario navega a `/products/nexus/app-versions`.
-2. Se ejecuta `AppVersionsService.getAll()` para obtener la política de cada plataforma.
-3. Se cargan en paralelo las métricas de instalaciones activas vía `AppVersionsService.getInstalls(platform, 30)`.
+2. Se ejecuta `AppVersionsService.getAll()` para obtener la política de cada plataforma. Si falla la carga, se muestra un mensaje de error explícito y el botón **Reintentar**, sin guardar datos simulados en producción.
+3. Se cargan en paralelo las métricas de instalaciones activas vía `AppVersionsService.getInstalls(platform, 30)`. Si la llamada falla, la sección muestra el aviso _"No se pudieron cargar las instalaciones"_ con botón de reintento.
 4. Si `updated_by` contiene un identificador interno de GAC (`gac:<uuid>`), se consulta `userService.getUser(uuid)` para mostrar el nombre y correo del usuario responsable; de lo contrario se muestra el texto literal o referencia de migración.
 5. Se muestra en pantalla la fecha de última actualización formateada en hora local y el aviso fijo de ventana de propagación.
 
@@ -51,13 +51,13 @@ Todas las llamadas se autentican con token PASETO interno vía `internalApi` (`s
 
 1. El usuario modifica los umbrales de versión, enlace a tienda o lista de versiones bloqueadas.
 2. Al pulsar **Guardar cambios**, se ejecuta primero una validación de formato en el cliente (`validatePolicyClient`).
-3. Se invoca `POST /client-version-policy/{platform}/preview?days=30` enviando el payload propuesto.
-4. Si la API devuelve un error de validación `422`, se mapea el error directamente al campo indicado en `field` (o banner general si no hay campo).
+3. Se invoca `POST /client-version-policy/{platform}/preview?days=30` enviando el payload normalizado (`store_url` vacío se serializa como `null`).
+4. Si la API devuelve un error de validación `422`, se mapea el error directamente al campo indicado en `field` (o banner general si no hay campo) y se aborta el guardado.
 5. Si la simulación es exitosa, se abre el modal de impacto mostrando el desglose en lenguaje claro: instalaciones activas totales, cuántas quedarán bloqueadas (`required`) y cuántas verán aviso opcional (`optional`).
 
 ### 3. Confirmación crítica y persistencia
 
-1. Si la nueva política incrementa `min_supported_version` o añade versiones a `blocked_versions` y el número de instalaciones bloqueadas es mayor a cero (`required > 0`), se activa un mecanismo de confirmación explícita:
+1. Si la nueva política incrementa `min_supported_version` o añade versiones a `blocked_versions` y el número de instalaciones bloqueadas es mayor a cero (`required > 0`), se activa un mecanismo de confirmación explícita evaluando la plataforma de `previewResult`:
    - Casilla de confirmación obligatoria entendiendo el impacto.
    - Confirmación por teclado escribiendo la versión mínima configurada.
 2. Una vez confirmada, se ejecuta `PUT /client-version-policy/{platform}`.
@@ -70,6 +70,39 @@ Todas las llamadas se autentican con token PASETO interno vía `internalApi` (`s
 - **Ventana de propagación:** Los cambios surten efecto de manera inmediata en el endpoint `GET /api/v1/client-config` de las aplicaciones móviles, y en hasta **60 segundos** en el middleware de control de versiones del resto de la API de SISCOM debido al tiempo de vida de su caché en memoria.
 - **Validación estricta de dominios de tienda:** La URL de la tienda para iOS debe ser `https://apps.apple.com/...` y para Android `https://play.google.com/...`. No se permite fijar un mínimo de versión sin tener configurada una URL de tienda válida.
 - **Prevención de bloqueos accidentales:** Ninguna política con `required > 0` que endurezca los umbrales puede aplicarse con un solo clic.
+- **Aislamiento de modo Mock:** El modo mock (`?mock=1`) está estrictamente limitado al entorno de desarrollo (`import.meta.env.DEV`). En compilaciones de producción no se procesa ni emite datos de prueba.
+
+---
+
+## 📸 Regeneración de Capturas
+
+Las imágenes de demostración no se versionan en el repositorio para evitar bloat binario.
+Para regenerarlas localmente utilizando Playwright:
+
+```bash
+# Iniciar servidor en modo desarrollo
+npm run dev
+
+# Ejecutar el script generador de capturas (en otra terminal)
+npx playwright test scripts/generate-screenshots.js
+```
+
+Los artefactos resultantes se depositan en `docs/screenshots/app-versions/` (ignorado por Git).
+
+---
+
+## 📋 Pedidos al contrato (Backend SISCOM Admin API)
+
+1. **Atributo `field` consistente en errores 422:** Confirmar que todos los validadores de Pydantic/FastAPI en `PUT /client-version-policy/{platform}` y `POST /client-version-policy/{platform}/preview` retornen `{ "detail": "...", "field": "nombre_del_campo" }` (o `loc: ["body", "nombre_del_campo"]`). `formatApiErrorMessage` y `AppVersionsService` soportan ambas formas.
+2. **Filtrado numérico estricto en Preview:** Asegurar que cuando `min_supported_version` sea `null`, las versiones activas desconocidas o sin formato no sean clasificadas como `required`, sino `none` o `unknown`.
+3. **Paginación o límite en `installs`:** Si con el tiempo crecen las variantes de compilación de las apps móviles, podría ser útil contar con un parámetro `limit` o agrupar automáticamente las versiones residuales (< 1% de instalaciones) bajo una categoría general.
+
+---
+
+## ⏳ Qué falta
+
+- **Despliegue de endpoints en `siscom-admin-api`:** Esperar a que Claude libere y despliegue los endpoints de la API (§3.2). Una vez activos en el entorno de desarrollo/staging, la pantalla de GAC cambiará automáticamente de modo mock a backend real sin requerir cambios de código.
+- **Fijación de la primera política real:** Jesús fijará la primera política oficial en producción para iOS y Android una vez desplegados ambos repositorios.
 
 ---
 
