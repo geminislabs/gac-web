@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-11-08
+
 ### Fixed
 
-- Banner de bienvenida en dashboard (`/`): reemplazado el texto fijo de versión por la constante inyectada en build desde `package.json` (`__APP_VERSION__`), garantizando sincronización automática en cada release (`· v1.9.0`). Los tests toman la constante del mismo `define` de `vite.config.js`, sin un respaldo escrito a mano en `vitest-setup.js` que taparía un `define` roto.
+- Banner de bienvenida en dashboard (`/`): reemplazado el texto fijo de versión por la constante inyectada en build desde `package.json` (`__APP_VERSION__`), garantizando sincronización automática en cada release (aquí, `· v1.9.1`). Los tests toman la constante del mismo `define` de `vite.config.js`, sin un respaldo escrito a mano en `vitest-setup.js` que taparía un `define` roto.
 
 ## [1.9.0] - 2026-11-07
 
