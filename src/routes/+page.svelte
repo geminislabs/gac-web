@@ -148,7 +148,9 @@
 			>
 				<div>
 					<h1 class="mb-2 text-3xl font-bold text-app">Bienvenido a Geminislabs</h1>
-					<p class="text-sm text-app-secondary">Panel de control administrativo · V1.0.0</p>
+					<p class="text-sm text-app-secondary">
+						Panel de control administrativo · v{__APP_VERSION__}
+					</p>
 				</div>
 				<div class="text-right">
 					<div class="text-2xl font-mono font-semibold text-app">
