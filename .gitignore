@@ -28,6 +28,7 @@ coverage/
 .cache/
 .husky/_
 .last-run.json
+docs/screenshots/
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 

@@ -82,7 +82,7 @@
 	</Topbar>
 
 	<div class="space-y-6 p-8">
-		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
 			<a href="/products/nexus/devices" class="block transition-transform hover:scale-[1.02]">
 				<Card hover class="flex cursor-pointer items-center justify-between p-6">
 					<div>
@@ -105,6 +105,35 @@
 							stroke-linejoin="round"
 							><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg
 						>
+					</div>
+				</Card>
+			</a>
+			<a href="/products/nexus/app-versions" class="block transition-transform hover:scale-[1.02]">
+				<Card hover class="flex cursor-pointer items-center justify-between p-6">
+					<div>
+						<p class="text-sm font-medium text-app-muted">Versiones App</p>
+						<p class="text-3xl font-bold text-app">Móviles</p>
+					</div>
+					<div
+						class="rounded-full p-3"
+						style="background: var(--color-warning-bg); color: var(--color-warning)"
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<path d="m12 19 7-7 3 3-7 7-3-3z" />
+							<path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+							<path d="m2 2 7.586 7.586" />
+							<circle cx="11" cy="11" r="2" />
+						</svg>
 					</div>
 				</Card>
 			</a>
