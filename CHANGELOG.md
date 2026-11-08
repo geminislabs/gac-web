@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Banner de bienvenida en dashboard (`/`): reemplazado el texto fijo de versión por la constante inyectada en build desde `package.json` (`__APP_VERSION__`), garantizando sincronización automática en cada release (`· v1.9.0`).
+
 ## [1.9.0] - 2026-11-07
 
 Requiere `siscom-admin-api` v1.67.0 (`/client-version-policy`), desplegada el 07/11.

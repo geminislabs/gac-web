@@ -1,6 +1,9 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, loadEnv } from 'vite';
+import { readFileSync } from 'node:fs';
+
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8'));
 
 /**
  * Origen HTTP desde PUBLIC_* (sin path) para alinear proxy de desarrollo con producción.
@@ -39,6 +42,9 @@ export default defineConfig(({ mode }) => {
 		'http://127.0.0.1:8080';
 
 	return {
+		define: {
+			__APP_VERSION__: JSON.stringify(pkg.version)
+		},
 		plugins: [tailwindcss(), sveltekit()],
 		test: {
 			environment: 'happy-dom',
