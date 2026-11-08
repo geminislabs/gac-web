@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Modal de análisis de impacto previo (`preview`) con desglose de instalaciones activas (últimos 30 días) y salvaguarda de confirmación crítica obligatoria cuando `required > 0` para prevenir bloqueos accidentales en producción.
 - Documentación de arquitectura de módulo en `docs/architecture/modules/nexus-app-versions.md` y actualización del índice de dependencias de API.
 
+### Security
+
+- Dependencias de desarrollo con avisos publicados después del último CI de `develop` (12/10), que dejaban en rojo `quality` (`npm audit`) y `security` (OSV) en cualquier PR; las de producción no tenían ninguno. `vite` 7.3.5 → 7.3.7, `vitest` y `@vitest/coverage-v8` 4.1.11 → 4.1.12 (`@vitest/mocker`), `fast-uri` 3.1.8 → 3.1.9 y `happy-dom` 20 → 21.0.4, porque dos de sus avisos solo se cierran en la 21. Nuevo `osv-scanner.toml` con tres excepciones sin arreglo tomable, las mismas que nexus-web-page: dos de Kit < 3 que no aplican (no hay `prerender` ni `use:enhance`) y `deepmerge`, sin versión corregida y solo en el build; vencen el 07/02/2027. El lock se generó con npm 11 en `node:22` (npm 10.9.9 cae con `edgesOut`) y conserva los binarios por plataforma y los `@emnapi` (`npm ci` verificado en macOS y en Linux)
+
 ## [1.8.0] - 2026-10-12
 
 ### Added
