@@ -25,13 +25,3 @@ Object.defineProperty(window, 'localStorage', {
 });
 
 global.fetch = vi.fn();
-
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
-try {
-	const pkg = JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf-8'));
-	globalThis.__APP_VERSION__ = globalThis.__APP_VERSION__ || pkg.version;
-} catch {
-	globalThis.__APP_VERSION__ = globalThis.__APP_VERSION__ || '1.9.0';
-}
