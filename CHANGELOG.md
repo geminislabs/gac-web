@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-07
+
+Requiere `siscom-admin-api` v1.67.0 (`/client-version-policy`), desplegada el 07/11.
+
 ### Added
 
 - Pantalla de gestión de política de versiones móviles Nexus en `/products/nexus/app-versions` (§3.3): visualización y edición de versión mínima soportada, última versión publicada, versiones revocadas/bloqueadas y URLs a tiendas oficiales (App Store y Google Play).
