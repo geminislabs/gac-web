@@ -45,6 +45,7 @@ export default defineConfig(({ mode }) => {
 		define: {
 			__APP_VERSION__: JSON.stringify(pkg.version)
 		},
+		resolve: process.env.VITEST ? { conditions: ['browser'] } : undefined,
 		plugins: [tailwindcss(), sveltekit()],
 		test: {
 			environment: 'happy-dom',
