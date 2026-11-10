@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-11-10
+
 ### Added
 
 - Suspensión y reactivación de cuentas Nexus desde GAC (`/products/nexus/accounts/[id]`):
