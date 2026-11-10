@@ -168,5 +168,51 @@ export const ClientsService = {
 			`/internal/accounts/${encodeURIComponent(id)}/capabilities/${encodeURIComponent(code)}`,
 			{ method: 'DELETE' }
 		);
+	},
+
+	// ── Suspensión y reactivación de cuentas ──────────────────────────────
+
+	/**
+	 * Árbol de subcuentas de una cuenta marca (RESELLER).
+	 * Devuelve la lista ordenada por nombre, sin incluir a la cuenta.
+	 * @param {string} id
+	 * @returns {Promise<ClientAccount[]>}
+	 */
+	async getSubaccounts(id) {
+		const response = await internalApi(`/internal/accounts/${encodeURIComponent(id)}/subaccounts`);
+		return Array.isArray(response) ? response : [];
+	},
+
+	/**
+	 * Cambia el estado de una cuenta (ACTIVE o SUSPENDED).
+	 * @param {string} id
+	 * @param {{
+	 * 	status: 'ACTIVE' | 'SUSPENDED',
+	 * 	includeSubaccounts?: boolean,
+	 * 	reason?: string,
+	 * 	cause?: 'non_payment' | 'other' | string
+	 * }} options
+	 * @returns {Promise<{
+	 * 	account: { id: string, account_name: string, previous_status: string, status: string },
+	 * 	changed: boolean,
+	 * 	subaccounts: Array<{ id: string, account_name: string, previous_status: string, status: string }>
+	 * }>}
+	 */
+	async setStatus(id, { status, includeSubaccounts = false, reason, cause } = {}) {
+		/** @type {Record<string, any>} */
+		const body = { status };
+		if (includeSubaccounts === true) {
+			body.include_subaccounts = true;
+		}
+		if (reason && typeof reason === 'string' && reason.trim()) {
+			body.reason = reason.trim();
+		}
+		if (cause && typeof cause === 'string' && cause.trim()) {
+			body.cause = cause.trim();
+		}
+		return internalApi(`/internal/accounts/${encodeURIComponent(id)}/status`, {
+			method: 'PATCH',
+			body: JSON.stringify(body)
+		});
 	}
 };

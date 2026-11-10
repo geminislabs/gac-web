@@ -69,4 +69,114 @@ describe('ClientsService', () => {
 			{ method: 'DELETE' }
 		);
 	});
+
+	it('getSubaccounts llama a GET /internal/accounts/{id}/subaccounts escapando id', async () => {
+		internalApiMock.mockResolvedValueOnce([
+			{ id: 'sub-1', account_name: 'Subcuenta A', status: 'ACTIVE' }
+		]);
+		const res = await ClientsService.getSubaccounts('acc/1');
+		expect(internalApiMock).toHaveBeenCalledWith('/internal/accounts/acc%2F1/subaccounts');
+		expect(res).toEqual([{ id: 'sub-1', account_name: 'Subcuenta A', status: 'ACTIVE' }]);
+
+		internalApiMock.mockResolvedValueOnce(null);
+		expect(await ClientsService.getSubaccounts('acc-2')).toEqual([]);
+	});
+
+	it('setStatus envía PATCH con status y escapa el id', async () => {
+		internalApiMock.mockResolvedValueOnce({
+			changed: true,
+			account: { id: 'acc/1', status: 'SUSPENDED' },
+			subaccounts: []
+		});
+
+		await ClientsService.setStatus('acc/1', { status: 'SUSPENDED' });
+		expect(internalApiMock).toHaveBeenCalledWith('/internal/accounts/acc%2F1/status', {
+			method: 'PATCH',
+			body: JSON.stringify({ status: 'SUSPENDED' })
+		});
+	});
+
+	it('setStatus mapea includeSubaccounts a include_subaccounts solo si es true', async () => {
+		internalApiMock.mockResolvedValue({ changed: true });
+
+		// includeSubaccounts es true -> se envía include_subaccounts: true
+		await ClientsService.setStatus('acc-1', {
+			status: 'SUSPENDED',
+			includeSubaccounts: true
+		});
+		expect(internalApiMock).toHaveBeenLastCalledWith('/internal/accounts/acc-1/status', {
+			method: 'PATCH',
+			body: JSON.stringify({ status: 'SUSPENDED', include_subaccounts: true })
+		});
+
+		// includeSubaccounts es false -> NO se envía include_subaccounts
+		await ClientsService.setStatus('acc-1', {
+			status: 'ACTIVE',
+			includeSubaccounts: false
+		});
+		expect(internalApiMock).toHaveBeenLastCalledWith('/internal/accounts/acc-1/status', {
+			method: 'PATCH',
+			body: JSON.stringify({ status: 'ACTIVE' })
+		});
+
+		// includeSubaccounts es undefined -> NO se envía include_subaccounts
+		await ClientsService.setStatus('acc-1', { status: 'ACTIVE' });
+		expect(internalApiMock).toHaveBeenLastCalledWith('/internal/accounts/acc-1/status', {
+			method: 'PATCH',
+			body: JSON.stringify({ status: 'ACTIVE' })
+		});
+	});
+
+	it('setStatus incluye reason recortado si fue proporcionado', async () => {
+		internalApiMock.mockResolvedValue({ changed: true });
+
+		await ClientsService.setStatus('acc-1', {
+			status: 'SUSPENDED',
+			reason: '   Falta de pago de octubre   '
+		});
+		expect(internalApiMock).toHaveBeenLastCalledWith('/internal/accounts/acc-1/status', {
+			method: 'PATCH',
+			body: JSON.stringify({ status: 'SUSPENDED', reason: 'Falta de pago de octubre' })
+		});
+
+		// string vacío o solo espacios -> no se incluye reason
+		await ClientsService.setStatus('acc-1', {
+			status: 'SUSPENDED',
+			reason: '   '
+		});
+		expect(internalApiMock).toHaveBeenLastCalledWith('/internal/accounts/acc-1/status', {
+			method: 'PATCH',
+			body: JSON.stringify({ status: 'SUSPENDED' })
+		});
+	});
+
+	it('setStatus incluye cause si fue proporcionado', async () => {
+		internalApiMock.mockResolvedValue({ changed: true });
+
+		await ClientsService.setStatus('acc-1', {
+			status: 'SUSPENDED',
+			cause: 'non_payment'
+		});
+		expect(internalApiMock).toHaveBeenLastCalledWith('/internal/accounts/acc-1/status', {
+			method: 'PATCH',
+			body: JSON.stringify({ status: 'SUSPENDED', cause: 'non_payment' })
+		});
+
+		await ClientsService.setStatus('acc-1', {
+			status: 'SUSPENDED',
+			cause: 'other'
+		});
+		expect(internalApiMock).toHaveBeenLastCalledWith('/internal/accounts/acc-1/status', {
+			method: 'PATCH',
+			body: JSON.stringify({ status: 'SUSPENDED', cause: 'other' })
+		});
+
+		await ClientsService.setStatus('acc-1', {
+			status: 'ACTIVE'
+		});
+		expect(internalApiMock).toHaveBeenLastCalledWith('/internal/accounts/acc-1/status', {
+			method: 'PATCH',
+			body: JSON.stringify({ status: 'ACTIVE' })
+		});
+	});
 });

@@ -13,6 +13,7 @@
 	import { nexusServiceBadge, nexusServiceDetailLine } from '$lib/utils/nexusStatus';
 	import AccountCommerceSection from '$lib/components/nexus/AccountCommerceSection.svelte';
 	import AccountBrandSection from '$lib/components/nexus/AccountBrandSection.svelte';
+	import AccountStatusModal from '$lib/components/nexus/AccountStatusModal.svelte';
 	import { toCommercialClientId } from '$lib/utils/commercialClient';
 
 	let clientId = $derived($page.params.id);
@@ -24,6 +25,8 @@
 	/** @type {any[]} */
 	let organizations = $state([]);
 	let isLoading = $state(true);
+	let isStatusModalOpen = $state(false);
+	let targetStatus = $state(/** @type {'ACTIVE' | 'SUSPENDED'} */ ('SUSPENDED'));
 
 	let nexusBadge = $derived(nexusServiceBadge(client?.nexus_service_status));
 	let nexusDetail = $derived(nexusServiceDetailLine(client));
@@ -89,6 +92,67 @@
 	function handleAddDevice() {
 		goto('/products/nexus/devices');
 	}
+
+	/** @param {'ACTIVE' | 'SUSPENDED'} nextStatus */
+	function openStatusDialog(nextStatus) {
+		targetStatus = nextStatus;
+		isStatusModalOpen = true;
+	}
+
+	/**
+	 * @param {{ status: 'ACTIVE' | 'SUSPENDED', includeSubaccounts: boolean, reason?: string, cause?: string }} payload
+	 */
+	async function handleConfirmStatusChange(payload) {
+		if (!clientId) return;
+		let res;
+		try {
+			res = await ClientsService.setStatus(clientId, payload);
+		} catch (error) {
+			console.error('Error changing account status:', error);
+			// `message` ya trae el `detail` formateado, también el de un 422 (una lista).
+			toast.error(
+				/** @type {any} */ (error)?.message || 'Error al actualizar el estado de la cuenta'
+			);
+			throw error;
+		}
+
+		const changedSubaccounts = res?.subaccounts?.length || 0;
+		const subaccountsText = `${changedSubaccounts} ${changedSubaccounts === 1 ? 'subcuenta' : 'subcuentas'}`;
+		if (!res?.changed && changedSubaccounts === 0) {
+			toast.info(
+				payload.status === 'SUSPENDED'
+					? 'La cuenta ya estaba suspendida'
+					: 'La cuenta ya estaba activa'
+			);
+		} else if (!res?.changed) {
+			toast.success(
+				payload.status === 'SUSPENDED'
+					? `La cuenta ya estaba suspendida; se suspendieron ${subaccountsText}`
+					: `La cuenta ya estaba activa; se reactivaron ${subaccountsText}`
+			);
+		} else if (payload.status === 'SUSPENDED') {
+			toast.success(
+				changedSubaccounts > 0
+					? `Cuenta suspendida junto con ${subaccountsText}`
+					: 'Cuenta suspendida'
+			);
+		} else {
+			toast.success(
+				changedSubaccounts > 0
+					? `Cuenta reactivada junto con ${subaccountsText}`
+					: 'Cuenta reactivada'
+			);
+		}
+
+		// Recarga la cuenta y sus organizaciones. Si falla, el cambio ya se hizo:
+		// no se reporta como error del cambio ni se deja el diálogo abierto.
+		try {
+			const orgs = await loadAccountData();
+			await loadDevicesForOrganizations(orgs);
+		} catch (error) {
+			console.error('Error reloading account after status change:', error);
+		}
+	}
 </script>
 
 <div class="flex min-h-screen flex-col bg-app text-app">
@@ -107,7 +171,7 @@
 				</div>
 				<div>
 					<p class="text-sm text-app-muted">Estatus</p>
-					<p class="font-medium">
+					<div class="mt-1 flex flex-wrap items-center gap-2">
 						<span
 							class={`gac-badge ${
 								client?.status === 'ACTIVE'
@@ -121,7 +185,16 @@
 						>
 							{client?.status || '-'}
 						</span>
-					</p>
+						{#if client?.status === 'ACTIVE'}
+							<Button variant="danger" size="sm" onclick={() => openStatusDialog('SUSPENDED')}>
+								Suspender cuenta
+							</Button>
+						{:else if client?.status === 'SUSPENDED'}
+							<Button variant="outline" size="sm" onclick={() => openStatusDialog('ACTIVE')}>
+								Reactivar cuenta
+							</Button>
+						{/if}
+					</div>
 				</div>
 				<div>
 					<p class="text-sm text-app-muted">Creado</p>
@@ -188,7 +261,25 @@
 							{#each organizations as org (org.id)}
 								<tr>
 									<td class="font-medium text-app">{org.name}</td>
-									<td>{org.status || '—'}</td>
+									<td>
+										{#if client?.status === 'SUSPENDED' && (org.status === 'ACTIVE' || org.status === 'active')}
+											<span class="gac-badge gac-badge-warning" title="La cuenta está suspendida">
+												Suspendida (por la cuenta)
+											</span>
+										{:else}
+											<span
+												class={`gac-badge ${
+													org.status === 'ACTIVE' || org.status === 'active'
+														? 'gac-badge-success'
+														: org.status === 'SUSPENDED' || org.status === 'suspended'
+															? 'gac-badge-danger'
+															: 'gac-badge-neutral'
+												}`}
+											>
+												{org.status || '—'}
+											</span>
+										{/if}
+									</td>
 									<td class="text-sm">
 										{org.nexus_service_status === 'active' ? 'Activo' : 'Inactivo'}
 									</td>
@@ -263,4 +354,12 @@
 			</Card>
 		</div>
 	</div>
+
+	<AccountStatusModal
+		bind:isOpen={isStatusModalOpen}
+		{targetStatus}
+		account={client}
+		organizationsCount={organizations.length}
+		onConfirm={handleConfirmStatusChange}
+	/>
 </div>
