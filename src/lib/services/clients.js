@@ -189,7 +189,8 @@ export const ClientsService = {
 	 * @param {{
 	 * 	status: 'ACTIVE' | 'SUSPENDED',
 	 * 	includeSubaccounts?: boolean,
-	 * 	reason?: string
+	 * 	reason?: string,
+	 * 	cause?: 'non_payment' | 'other' | string
 	 * }} options
 	 * @returns {Promise<{
 	 * 	account: { id: string, account_name: string, previous_status: string, status: string },
@@ -197,7 +198,7 @@ export const ClientsService = {
 	 * 	subaccounts: Array<{ id: string, account_name: string, previous_status: string, status: string }>
 	 * }>}
 	 */
-	async setStatus(id, { status, includeSubaccounts = false, reason } = {}) {
+	async setStatus(id, { status, includeSubaccounts = false, reason, cause } = {}) {
 		/** @type {Record<string, any>} */
 		const body = { status };
 		if (includeSubaccounts === true) {
@@ -205,6 +206,9 @@ export const ClientsService = {
 		}
 		if (reason && typeof reason === 'string' && reason.trim()) {
 			body.reason = reason.trim();
+		}
+		if (cause && typeof cause === 'string' && cause.trim()) {
+			body.cause = cause.trim();
 		}
 		return internalApi(`/internal/accounts/${encodeURIComponent(id)}/status`, {
 			method: 'PATCH',

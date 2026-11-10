@@ -50,7 +50,7 @@ describe('AccountStatusModal', () => {
 		unmount(comp);
 	});
 
-	it('muestra el mensaje de reactivación', () => {
+	it('muestra el mensaje de reactivación y no muestra opciones de causa', () => {
 		const comp = mount(AccountStatusModal, {
 			target: container,
 			props: {
@@ -71,6 +71,94 @@ describe('AccountStatusModal', () => {
 		expect(normalizedText()).toContain(
 			'Las organizaciones volverán a tener servicio. Los enlaces compartidos que se apagaron no vuelven.'
 		);
+		// Solo al suspender se piden las causas
+		expect(container.querySelectorAll('input[type="radio"]').length).toBe(0);
+		expect(normalizedText()).not.toContain('Causa de la suspensión');
+
+		unmount(comp);
+	});
+
+	it('pide la causa de suspensión con dos opciones radio por defecto non_payment', () => {
+		const comp = mount(AccountStatusModal, {
+			target: container,
+			props: {
+				isOpen: true,
+				targetStatus: 'SUSPENDED',
+				account: {
+					id: 'acc-1',
+					account_name: 'Cliente Base',
+					account_type: 'CUSTOMER',
+					status: 'ACTIVE'
+				},
+				organizationsCount: 1
+			}
+		});
+		flushSync();
+
+		const radios = /** @type {NodeListOf<HTMLInputElement>} */ (
+			container.querySelectorAll('input[type="radio"]')
+		);
+		expect(radios.length).toBe(2);
+
+		const nonPaymentRadio = Array.from(radios).find((r) => r.value === 'non_payment');
+		const otherRadio = Array.from(radios).find((r) => r.value === 'other');
+
+		expect(nonPaymentRadio).toBeDefined();
+		expect(nonPaymentRadio?.checked).toBe(true);
+		expect(otherRadio).toBeDefined();
+		expect(otherRadio?.checked).toBe(false);
+
+		expect(normalizedText()).toContain('Falta de pago');
+		expect(normalizedText()).toContain('Se reactivará sola cuando pague.');
+		expect(normalizedText()).toContain('Otra causa');
+		expect(normalizedText()).toContain('Solo se podrá reactivar desde GAC, aunque pague.');
+
+		unmount(comp);
+	});
+
+	it('permite cambiar la causa a other y la envía en el callback', () => {
+		const onConfirm = vi.fn().mockResolvedValue(undefined);
+
+		const comp = mount(AccountStatusModal, {
+			target: container,
+			props: {
+				isOpen: true,
+				targetStatus: 'SUSPENDED',
+				account: {
+					id: 'acc-1',
+					account_name: 'Cliente Base',
+					account_type: 'CUSTOMER',
+					status: 'ACTIVE'
+				},
+				organizationsCount: 1,
+				onConfirm
+			}
+		});
+		flushSync();
+
+		const otherRadio = /** @type {HTMLInputElement} */ (
+			Array.from(container.querySelectorAll('input[type="radio"]')).find(
+				(r) => /** @type {HTMLInputElement} */ (r).value === 'other'
+			)
+		);
+		otherRadio.checked = true;
+		otherRadio.dispatchEvent(new Event('change', { bubbles: true }));
+		flushSync();
+
+		const confirmBtn = /** @type {HTMLButtonElement} */ (
+			Array.from(container.querySelectorAll('button')).find((b) =>
+				b.textContent?.includes('Suspender cuenta')
+			)
+		);
+		confirmBtn.click();
+		flushSync();
+
+		expect(onConfirm).toHaveBeenCalledWith({
+			status: 'SUSPENDED',
+			includeSubaccounts: false,
+			reason: undefined,
+			cause: 'other'
+		});
 
 		unmount(comp);
 	});
@@ -167,7 +255,8 @@ describe('AccountStatusModal', () => {
 		expect(onConfirm).toHaveBeenCalledWith({
 			status: 'SUSPENDED',
 			includeSubaccounts: true,
-			reason: undefined
+			reason: undefined,
+			cause: 'non_payment'
 		});
 
 		unmount(comp);
@@ -212,7 +301,8 @@ describe('AccountStatusModal', () => {
 		expect(onConfirm).toHaveBeenCalledWith({
 			status: 'SUSPENDED',
 			includeSubaccounts: false,
-			reason: undefined
+			reason: undefined,
+			cause: 'non_payment'
 		});
 
 		unmount(comp);
@@ -223,6 +313,8 @@ describe('AccountStatusModal', () => {
 			{ id: 'sub-1', account_name: 'Subcuenta Activa', status: 'ACTIVE' },
 			{ id: 'sub-2', account_name: 'Subcuenta Suspendida', status: 'SUSPENDED' }
 		]);
+
+		const onConfirm = vi.fn().mockResolvedValue(undefined);
 
 		const comp = mount(AccountStatusModal, {
 			target: container,
@@ -235,7 +327,8 @@ describe('AccountStatusModal', () => {
 					account_type: 'RESELLER',
 					status: 'SUSPENDED'
 				},
-				organizationsCount: 2
+				organizationsCount: 2,
+				onConfirm
 			}
 		});
 		flushSync();
@@ -263,6 +356,21 @@ describe('AccountStatusModal', () => {
 		const suspendedRow = subElements.find((el) => el.textContent?.includes('Subcuenta Suspendida'));
 		expect(suspendedRow?.className).toContain('text-danger');
 		expect(suspendedRow?.textContent).toContain('SUSPENDED');
+
+		const confirmBtn = /** @type {HTMLButtonElement} */ (
+			Array.from(container.querySelectorAll('button')).find((b) =>
+				b.textContent?.includes('Reactivar cuenta')
+			)
+		);
+		confirmBtn.click();
+		flushSync();
+
+		expect(onConfirm).toHaveBeenCalledWith({
+			status: 'ACTIVE',
+			includeSubaccounts: true,
+			reason: undefined,
+			cause: undefined
+		});
 
 		unmount(comp);
 	});
@@ -304,7 +412,8 @@ describe('AccountStatusModal', () => {
 		expect(onConfirm).toHaveBeenCalledWith({
 			status: 'SUSPENDED',
 			includeSubaccounts: false,
-			reason: 'Falta de pago de octubre'
+			reason: 'Falta de pago de octubre',
+			cause: 'non_payment'
 		});
 
 		unmount(comp);

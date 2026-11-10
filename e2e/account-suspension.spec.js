@@ -75,6 +75,11 @@ test.describe('Account Suspension and Reactivation', () => {
 			'Todas las organizaciones de esta cuenta (2) dejarán de tener servicio'
 		);
 		await expect(page.locator('input[type="checkbox"]')).toHaveCount(0);
+		await expect(page.getByText('Falta de pago')).toBeVisible();
+		await expect(page.getByText('Se reactivará sola cuando pague.')).toBeVisible();
+		await expect(page.getByText('Otra causa')).toBeVisible();
+		await expect(page.getByText('Solo se podrá reactivar desde GAC, aunque pague.')).toBeVisible();
+		await expect(page.locator('input[value="non_payment"]')).toBeChecked();
 	});
 
 	test('reseller account shows subaccounts checkbox and warns when reactivating with suspended subaccounts', async ({
@@ -140,5 +145,6 @@ test.describe('Account Suspension and Reactivation', () => {
 			)
 		).toBeVisible();
 		await expect(page.getByText('Distribuidora Centro')).toBeVisible();
+		await expect(page.locator('input[name="suspension_cause"]')).toHaveCount(0);
 	});
 });

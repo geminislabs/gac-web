@@ -149,4 +149,34 @@ describe('ClientsService', () => {
 			body: JSON.stringify({ status: 'SUSPENDED' })
 		});
 	});
+
+	it('setStatus incluye cause si fue proporcionado', async () => {
+		internalApiMock.mockResolvedValue({ changed: true });
+
+		await ClientsService.setStatus('acc-1', {
+			status: 'SUSPENDED',
+			cause: 'non_payment'
+		});
+		expect(internalApiMock).toHaveBeenLastCalledWith('/internal/accounts/acc-1/status', {
+			method: 'PATCH',
+			body: JSON.stringify({ status: 'SUSPENDED', cause: 'non_payment' })
+		});
+
+		await ClientsService.setStatus('acc-1', {
+			status: 'SUSPENDED',
+			cause: 'other'
+		});
+		expect(internalApiMock).toHaveBeenLastCalledWith('/internal/accounts/acc-1/status', {
+			method: 'PATCH',
+			body: JSON.stringify({ status: 'SUSPENDED', cause: 'other' })
+		});
+
+		await ClientsService.setStatus('acc-1', {
+			status: 'ACTIVE'
+		});
+		expect(internalApiMock).toHaveBeenLastCalledWith('/internal/accounts/acc-1/status', {
+			method: 'PATCH',
+			body: JSON.stringify({ status: 'ACTIVE' })
+		});
+	});
 });

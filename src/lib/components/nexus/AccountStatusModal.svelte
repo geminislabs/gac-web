@@ -18,7 +18,12 @@
 	 * 	targetStatus?: 'ACTIVE' | 'SUSPENDED',
 	 * 	account?: { id: string, name?: string, account_name?: string, account_type?: string, status?: string } | null,
 	 * 	organizationsCount?: number,
-	 * 	onConfirm?: (payload: { status: 'ACTIVE' | 'SUSPENDED', includeSubaccounts: boolean, reason?: string }) => Promise<void> | void,
+	 * 	onConfirm?: (payload: {
+	 * 		status: 'ACTIVE' | 'SUSPENDED',
+	 * 		includeSubaccounts: boolean,
+	 * 		reason?: string,
+	 * 		cause?: 'non_payment' | 'other'
+	 * 	}) => Promise<void> | void,
 	 * 	onClose?: () => void
 	 * }}
 	 */
@@ -33,6 +38,7 @@
 
 	let reason = $state('');
 	let includeSubaccounts = $state(false);
+	let cause = $state(/** @type {'non_payment' | 'other'} */ ('non_payment'));
 	/** @type {SubaccountItem[]} */
 	let subaccounts = $state([]);
 	let isLoadingSubaccounts = $state(false);
@@ -49,6 +55,7 @@
 			prevOpen = true;
 			reason = '';
 			includeSubaccounts = false;
+			cause = 'non_payment';
 			subaccounts = [];
 			isSubmitting = false;
 
@@ -89,7 +96,8 @@
 			await onConfirm({
 				status: targetStatus,
 				includeSubaccounts: Boolean(isReseller && includeSubaccounts),
-				reason: reason.trim() || undefined
+				reason: reason.trim() || undefined,
+				cause: isSuspending ? cause : undefined
 			});
 			isOpen = false;
 		} finally {
@@ -298,6 +306,52 @@
 								</div>
 							</div>
 						{/if}
+					</div>
+				{/if}
+
+				<!-- Causa de la suspensión (solo al suspender) -->
+				{#if isSuspending}
+					<div class="space-y-2">
+						<p class="gac-label mb-1">Causa de la suspensión</p>
+						<div class="space-y-2">
+							<label
+								class="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors {cause ===
+								'non_payment'
+									? 'border-accent bg-accent/5'
+									: 'border-border bg-app-tertiary hover:border-border-strong'}"
+							>
+								<input
+									type="radio"
+									name="suspension_cause"
+									value="non_payment"
+									bind:group={cause}
+									class="mt-0.5 h-4 w-4 border-border text-accent focus:ring-accent"
+								/>
+								<div class="space-y-0.5 text-xs">
+									<p class="font-medium text-app">Falta de pago</p>
+									<p class="text-app-muted">Se reactivará sola cuando pague.</p>
+								</div>
+							</label>
+
+							<label
+								class="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors {cause ===
+								'other'
+									? 'border-accent bg-accent/5'
+									: 'border-border bg-app-tertiary hover:border-border-strong'}"
+							>
+								<input
+									type="radio"
+									name="suspension_cause"
+									value="other"
+									bind:group={cause}
+									class="mt-0.5 h-4 w-4 border-border text-accent focus:ring-accent"
+								/>
+								<div class="space-y-0.5 text-xs">
+									<p class="font-medium text-app">Otra causa</p>
+									<p class="text-app-muted">Solo se podrá reactivar desde GAC, aunque pague.</p>
+								</div>
+							</label>
+						</div>
 					</div>
 				{/if}
 

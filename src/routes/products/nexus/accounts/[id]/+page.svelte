@@ -100,7 +100,7 @@
 	}
 
 	/**
-	 * @param {{ status: 'ACTIVE' | 'SUSPENDED', includeSubaccounts: boolean, reason?: string }} payload
+	 * @param {{ status: 'ACTIVE' | 'SUSPENDED', includeSubaccounts: boolean, reason?: string, cause?: string }} payload
 	 */
 	async function handleConfirmStatusChange(payload) {
 		if (!clientId) return;

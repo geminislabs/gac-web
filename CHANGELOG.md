@@ -11,10 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Suspensión y reactivación de cuentas Nexus desde GAC (`/products/nexus/accounts/[id]`):
   - Botones «Suspender cuenta» y «Reactivar cuenta» junto al estatus de la cuenta.
-  - Diálogo modal de confirmación (`AccountStatusModal.svelte`) con advertencias de impacto operativas diferenciadas para suspensión y reactivación, y campo opcional de «Motivo» (máximo 500 caracteres) para auditoría.
+  - Diálogo modal de confirmación (`AccountStatusModal.svelte`) con advertencias de impacto operativas diferenciadas para suspensión y reactivación, selección de causa de suspensión («Falta de pago» / `non_payment` por defecto y «Otra causa» / `other`), y campo opcional de «Motivo» (máximo 500 caracteres) para auditoría.
   - Soporte para cuentas marca (`RESELLER`): carga dinámica del árbol de subcuentas vía `ClientsService.getSubaccounts()`, casilla «Aplicar también a sus N subcuentas» (desmarcada por defecto) y aviso al reactivar resaltando aquellas subcuentas que ya estaban suspendidas.
   - Indicador «Suspendida (por la cuenta)» en la tabla de organizaciones cuando la cuenta raíz está suspendida.
-  - Métodos `getSubaccounts(id)` y `setStatus(id, { status, includeSubaccounts, reason })` en `ClientsService` (`src/lib/services/clients.js`).
+  - Métodos `getSubaccounts(id)` y `setStatus(id, { status, includeSubaccounts, reason, cause })` en `ClientsService` (`src/lib/services/clients.js`).
 
 ## [1.9.1] - 2026-11-08
 
