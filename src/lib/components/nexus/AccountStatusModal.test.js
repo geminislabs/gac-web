@@ -287,7 +287,7 @@ describe('AccountStatusModal', () => {
 		flushSync();
 
 		await vi.waitFor(() => {
-			expect(normalizedText()).toContain('Aplicar también a sus 1 subcuentas');
+			expect(normalizedText()).toContain('Aplicar también a sus 1 subcuenta');
 		});
 
 		const confirmBtn = /** @type {HTMLButtonElement} */ (
@@ -416,6 +416,96 @@ describe('AccountStatusModal', () => {
 			cause: 'non_payment'
 		});
 
+		unmount(comp);
+	});
+
+	it('si no carga las subcuentas lo dice y no inventa «0 subcuentas»', async () => {
+		/** @type {any} */ (ClientsService.getSubaccounts).mockRejectedValueOnce(new Error('500'));
+		vi.spyOn(console, 'error').mockImplementation(() => {});
+
+		const comp = mount(AccountStatusModal, {
+			target: container,
+			props: {
+				isOpen: true,
+				targetStatus: 'SUSPENDED',
+				account: { id: 'res-1', account_name: 'Marca', account_type: 'RESELLER' },
+				organizationsCount: 1
+			}
+		});
+		flushSync();
+
+		await vi.waitFor(() => {
+			expect(normalizedText()).toContain('Aplicar también a sus subcuentas');
+		});
+		expect(normalizedText()).not.toContain('0 subcuentas');
+
+		const checkbox = /** @type {HTMLInputElement} */ (
+			container.querySelector('input[type="checkbox"]')
+		);
+		checkbox.checked = true;
+		checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+		flushSync();
+		expect(normalizedText()).toContain('No se pudieron cargar las subcuentas');
+
+		unmount(comp);
+	});
+
+	it('una sola subcuenta va en singular', async () => {
+		/** @type {any} */ (ClientsService.getSubaccounts).mockResolvedValueOnce([
+			{ id: 'sub-1', account_name: 'Única', status: 'ACTIVE' }
+		]);
+
+		const comp = mount(AccountStatusModal, {
+			target: container,
+			props: {
+				isOpen: true,
+				targetStatus: 'SUSPENDED',
+				account: { id: 'res-1', account_name: 'Marca', account_type: 'RESELLER' },
+				organizationsCount: 1
+			}
+		});
+		flushSync();
+
+		await vi.waitFor(() => {
+			expect(normalizedText()).toContain('Aplicar también a sus 1 subcuenta');
+		});
+		expect(normalizedText()).not.toContain('1 subcuentas');
+
+		unmount(comp);
+	});
+
+	it('si el cambio falla, el diálogo sigue abierto y el rechazo no se escapa', async () => {
+		const onConfirm = vi.fn().mockRejectedValue(new Error('La cuenta está borrada'));
+		const unhandled = vi.fn();
+		process.on('unhandledRejection', unhandled);
+
+		const comp = mount(AccountStatusModal, {
+			target: container,
+			props: {
+				isOpen: true,
+				targetStatus: 'SUSPENDED',
+				account: { id: 'acc-1', account_name: 'Cliente', account_type: 'CUSTOMER' },
+				organizationsCount: 1,
+				onConfirm
+			}
+		});
+		flushSync();
+
+		const confirmBtn = /** @type {HTMLButtonElement} */ (
+			Array.from(container.querySelectorAll('button')).find((b) =>
+				b.textContent?.includes('Suspender cuenta')
+			)
+		);
+		confirmBtn.click();
+		await new Promise((r) => setTimeout(r, 0));
+		flushSync();
+
+		expect(onConfirm).toHaveBeenCalled();
+		expect(normalizedText()).toContain('Causa de la suspensión');
+		expect(confirmBtn.disabled).toBe(false);
+		expect(unhandled).not.toHaveBeenCalled();
+
+		process.off('unhandledRejection', unhandled);
 		unmount(comp);
 	});
 

@@ -42,6 +42,7 @@
 	/** @type {SubaccountItem[]} */
 	let subaccounts = $state([]);
 	let isLoadingSubaccounts = $state(false);
+	let subaccountsError = $state(false);
 	let isSubmitting = $state(false);
 	let prevOpen = $state(false);
 	/** @type {HTMLDivElement | undefined} */
@@ -57,6 +58,7 @@
 			includeSubaccounts = false;
 			cause = 'non_payment';
 			subaccounts = [];
+			subaccountsError = false;
 			isSubmitting = false;
 
 			if (account?.account_type === 'RESELLER' && account?.id) {
@@ -68,6 +70,7 @@
 					.catch((err) => {
 						console.error('Error cargando subcuentas:', err);
 						subaccounts = [];
+						subaccountsError = true;
 					})
 					.finally(() => {
 						isLoadingSubaccounts = false;
@@ -100,6 +103,8 @@
 				cause: isSuspending ? cause : undefined
 			});
 			isOpen = false;
+		} catch {
+			// `onConfirm` ya avisó del error; el diálogo sigue abierto para reintentar.
 		} finally {
 			isSubmitting = false;
 		}
@@ -231,8 +236,11 @@
 							<span>
 								{#if isLoadingSubaccounts}
 									Cargando subcuentas...
+								{:else if subaccountsError}
+									Aplicar también a sus subcuentas
 								{:else}
-									Aplicar también a sus {subaccounts.length} subcuentas
+									Aplicar también a sus {subaccounts.length}
+									{subaccounts.length === 1 ? 'subcuenta' : 'subcuentas'}
 								{/if}
 							</span>
 						</label>
@@ -276,7 +284,12 @@
 									class="max-h-40 overflow-y-auto space-y-1.5 rounded-md border p-2"
 									style="border-color: var(--color-border); background: var(--color-bg-secondary)"
 								>
-									{#if subaccounts.length === 0}
+									{#if subaccountsError}
+										<p class="py-2 text-center text-xs text-danger">
+											No se pudieron cargar las subcuentas. El cambio se aplicará igual a todo su
+											árbol.
+										</p>
+									{:else if subaccounts.length === 0}
 										<p class="py-2 text-center text-xs text-app-muted">
 											Esta cuenta no tiene subcuentas asociadas.
 										</p>

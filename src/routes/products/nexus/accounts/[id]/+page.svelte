@@ -104,48 +104,53 @@
 	 */
 	async function handleConfirmStatusChange(payload) {
 		if (!clientId) return;
+		let res;
 		try {
-			const res = await ClientsService.setStatus(clientId, payload);
-
-			// Recarga la cuenta y sus organizaciones
-			const orgs = await loadAccountData();
-			await loadDevicesForOrganizations(orgs);
-
-			if (!res?.changed) {
-				toast.info(
-					payload.status === 'SUSPENDED'
-						? 'La cuenta ya estaba suspendida'
-						: 'La cuenta ya estaba activa'
-				);
-				return;
-			}
-
-			const changedSubaccounts = res?.subaccounts?.length || 0;
-			if (payload.status === 'SUSPENDED') {
-				if (changedSubaccounts > 0) {
-					toast.success(
-						`Cuenta suspendida junto con ${changedSubaccounts} ${changedSubaccounts === 1 ? 'subcuenta' : 'subcuentas'}`
-					);
-				} else {
-					toast.success('Cuenta suspendida');
-				}
-			} else {
-				if (changedSubaccounts > 0) {
-					toast.success(
-						`Cuenta reactivada junto con ${changedSubaccounts} ${changedSubaccounts === 1 ? 'subcuenta' : 'subcuentas'}`
-					);
-				} else {
-					toast.success('Cuenta reactivada');
-				}
-			}
+			res = await ClientsService.setStatus(clientId, payload);
 		} catch (error) {
 			console.error('Error changing account status:', error);
-			const detail =
-				/** @type {any} */ (error)?.data?.detail ||
-				/** @type {any} */ (error)?.message ||
-				'Error al actualizar el estado de la cuenta';
-			toast.error(detail);
+			// `message` ya trae el `detail` formateado, también el de un 422 (una lista).
+			toast.error(
+				/** @type {any} */ (error)?.message || 'Error al actualizar el estado de la cuenta'
+			);
 			throw error;
+		}
+
+		const changedSubaccounts = res?.subaccounts?.length || 0;
+		const subaccountsText = `${changedSubaccounts} ${changedSubaccounts === 1 ? 'subcuenta' : 'subcuentas'}`;
+		if (!res?.changed && changedSubaccounts === 0) {
+			toast.info(
+				payload.status === 'SUSPENDED'
+					? 'La cuenta ya estaba suspendida'
+					: 'La cuenta ya estaba activa'
+			);
+		} else if (!res?.changed) {
+			toast.success(
+				payload.status === 'SUSPENDED'
+					? `La cuenta ya estaba suspendida; se suspendieron ${subaccountsText}`
+					: `La cuenta ya estaba activa; se reactivaron ${subaccountsText}`
+			);
+		} else if (payload.status === 'SUSPENDED') {
+			toast.success(
+				changedSubaccounts > 0
+					? `Cuenta suspendida junto con ${subaccountsText}`
+					: 'Cuenta suspendida'
+			);
+		} else {
+			toast.success(
+				changedSubaccounts > 0
+					? `Cuenta reactivada junto con ${subaccountsText}`
+					: 'Cuenta reactivada'
+			);
+		}
+
+		// Recarga la cuenta y sus organizaciones. Si falla, el cambio ya se hizo:
+		// no se reporta como error del cambio ni se deja el diálogo abierto.
+		try {
+			const orgs = await loadAccountData();
+			await loadDevicesForOrganizations(orgs);
+		} catch (error) {
+			console.error('Error reloading account after status change:', error);
 		}
 	}
 </script>
