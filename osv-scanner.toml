@@ -36,3 +36,12 @@ reason = "Kit < 3: solo afecta a use:enhance y aquí no se usa. Quitar al migrar
 id = "GHSA-gcqx-w48m-w2h4"
 ignoreUntil = 2027-02-07T00:00:00Z
 reason = "deepmerge sin arreglo; solo en el build (adapter-node, vite-plugin-svelte), sin datos de usuarios."
+
+# minimatch 7.0.0–11.0.0: denegación de servicio por amplificación de patrones.
+# Entra con ESLint 10 (dev), que exige minimatch ^10.2.6 y aún no acepta 11.x;
+# los patrones son los del propio repo, no de usuarios. Misma excepción que
+# nexus-web-page. Quitarla cuando ESLint acepte minimatch 11.
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+ignoreUntil = 2026-12-02T00:00:00Z
+reason = "minimatch solo vía ESLint (dev), con patrones propios; ESLint aún no acepta 11.x. Quitar cuando lo acepte."

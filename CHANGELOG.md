@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Dependencias al día (reúne los PR #11, #13, #16, #17, #19, #20, #21, #22 y #39 de Dependabot):
+  - Node 24 LTS en la CI, el `Dockerfile`, `.nvmrc` y `engines` (antes 22; #11 proponía 26 solo en el `Dockerfile`). `@types/node` ^24.
+  - ESLint 10 junto con `@eslint/js` 10 (#17 no instalaba solo). La regla nueva `preserve-caught-error` pedía el `cause` en el error de autenticación interna de `api.js`.
+  - commitlint 21 (`cli` y `config-conventional` juntos), TypeScript 6 (lo usa `svelte-check`) y el grupo dev-tooling: Playwright 1.65, Prettier 3.9, `prettier-plugin-tailwindcss` 0.8, Svelte 5.57, `svelte-check` 4.7, `eslint-plugin-svelte` 3.24, `@tailwindcss/vite` 4.3.5.
+  - Acciones de GitHub a `@v7` (`checkout`, `setup-node`, `upload-artifact`, `docker/build-push-action`).
+  - `@googlemaps/js-api-loader` 2: `Loader` ya no existe (lanza un error), el mapa de dispositivos usa `setOptions()` e `importLibrary('maps' | 'marker')`. Ya no carga `places` ni `geometry`, que no se usaban.
+
+### Security
+
+- `osv-scanner.toml`: excepción para GHSA-g3hv-75wg-m249 (minimatch, solo vía ESLint 10 en dev, sin arreglo en 10.x), igual que en nexus-web-page; vence el 2026-12-02.
+
 ## [1.10.0] - 2026-11-10
 
 ### Added
