@@ -117,7 +117,7 @@ export async function internalApi(endpoint, options = {}) {
 		token = await getInternalToken('nexus');
 	} catch (err) {
 		console.error('Failed to satisfy internal authentication:', err);
-		throw new Error('No se pudo autenticar con el servicio interno');
+		throw new Error('No se pudo autenticar con el servicio interno', { cause: err });
 	}
 
 	/** @type {any} */

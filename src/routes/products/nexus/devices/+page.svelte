@@ -194,14 +194,11 @@
 	async function initMap() {
 		mapLoading = true;
 		try {
-			const { Loader } = await import('@googlemaps/js-api-loader');
-			const loader = new Loader({
-				apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-				version: 'weekly',
-				libraries: ['places', 'geometry', 'marker']
-			});
-
-			await loader.load();
+			// js-api-loader 2: `Loader` ya no existe. Las opciones sólo se toman la
+			// primera vez; al volver a montar la página se ignoran.
+			const { setOptions, importLibrary } = await import('@googlemaps/js-api-loader');
+			setOptions({ key: import.meta.env.VITE_GOOGLE_MAPS_API_KEY, v: 'weekly' });
+			await Promise.all([importLibrary('maps'), importLibrary('marker')]);
 			googleRef = /** @type {any} */ (window).google;
 
 			map = new googleRef.maps.Map(mapContainer, {
