@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- SvelteKit 2.70.3 → 2.70.4 por GHSA-mw6w-2fmv-pvw3 (severidad media), publicado después de #40. Lo detectó el escaneo OSV de la CI
+
 - `osv-scanner.toml`: excepción para GHSA-g3hv-75wg-m249 (minimatch, solo vía ESLint 10 en dev, sin arreglo en 10.x), igual que en nexus-web-page; vence el 2026-12-02.
 
 ## [1.10.0] - 2026-11-10
