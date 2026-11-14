@@ -103,6 +103,35 @@ describe('publicApiProxy', () => {
 			expect(enviadas.get('Accept')).toBe('application/json');
 		});
 
+		it('deja pasar el data token (v4.public) hacia siscom-api', async () => {
+			const fetchFn = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
+			await proxyPublicApi(
+				new Request(`http://gac.local/api/public/${RUTA}`, {
+					headers: { Authorization: 'Bearer v4.public.eyJkYXRhIjoxfQ.firma-_' }
+				}),
+				RUTA,
+				'',
+				BACKEND,
+				fetchFn
+			);
+			const enviadas = fetchFn.mock.calls[0][1].headers;
+			expect(enviadas.get('Authorization')).toBe('Bearer v4.public.eyJkYXRhIjoxfQ.firma-_');
+		});
+
+		it('no reenvía otra cosa en Authorization aunque se parezca', async () => {
+			const fetchFn = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
+			await proxyPublicApi(
+				new Request(`http://gac.local/api/public/${RUTA}`, {
+					headers: { Authorization: 'Basic v4.public.algo' }
+				}),
+				RUTA,
+				'',
+				BACKEND,
+				fetchFn
+			);
+			expect(fetchFn.mock.calls[0][1].headers.get('Authorization')).toBeNull();
+		});
+
 		it('no deja que el backend ponga cookies en el dominio de GAC', async () => {
 			// El proxy es same-origin: un Set-Cookie de siscom-api se instalaría
 			// en el dominio de la consola.

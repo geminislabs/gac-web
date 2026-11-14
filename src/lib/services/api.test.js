@@ -18,6 +18,8 @@ describe('api service', () => {
 	let api;
 	/** @type {typeof import('./api.js').internalApi} */
 	let internalApi;
+	/** @type {typeof import('./api.js').dataPlaneApi} */
+	let dataPlaneApi;
 	/** @type {typeof import('./api.js').getInternalToken} */
 	let getInternalToken;
 
@@ -34,6 +36,7 @@ describe('api service', () => {
 		const mod = await import('./api.js');
 		api = mod.api;
 		internalApi = mod.internalApi;
+		dataPlaneApi = mod.dataPlaneApi;
 		getInternalToken = mod.getInternalToken;
 		mod.initApi(authStore);
 	});
@@ -157,40 +160,30 @@ describe('api service', () => {
 		expect(fetch.mock.calls[1][0]).toBe('/api/admin/internal/organizations');
 	});
 
-	it('internalApi uses public proxy when service is public', async () => {
-		fetch
-			.mockResolvedValueOnce({
-				ok: true,
-				status: 200,
-				json: async () => ({ data: 'paseto-token' })
-			})
-			.mockResolvedValueOnce({ ok: true, status: 200, json: async () => [] });
+	it('dataPlaneApi va same-origin con el data token y sin pedir el PASETO interno', async () => {
+		fetch.mockResolvedValueOnce({ ok: true, status: 200, json: async () => [] });
 
-		await internalApi('/devices/1/communications/latest', { service: 'public' });
-		expect(fetch.mock.calls[1][0]).toBe('/api/public/devices/1/communications/latest');
+		await dataPlaneApi('/devices/ref-1/communications/latest', 'v4.public.tok');
+
+		expect(fetch).toHaveBeenCalledTimes(1);
+		const [url, init] = fetch.mock.calls[0];
+		expect(url).toBe('/api/public/devices/ref-1/communications/latest');
+		expect(init.headers.Authorization).toBe('Bearer v4.public.tok');
 	});
 
-	it('internalApi uses public proxy in production to avoid CORS', async () => {
-		env.dev = false;
-		vi.resetModules();
-		vi.stubGlobal('fetch', vi.fn());
-		authStore = writable({
-			token: 'access-token',
-			refreshToken: null,
-			user: null,
-			isAuthenticated: true
+	it('dataPlaneApi expone el status para que el llamador reemita el token', async () => {
+		fetch.mockResolvedValueOnce({
+			ok: false,
+			status: 403,
+			statusText: 'Forbidden',
+			json: async () => ({ detail: 'Ref fuera de alcance' })
 		});
-		const mod = await import('./api.js');
-		mod.initApi(authStore);
-		fetch
-			.mockResolvedValueOnce({
-				ok: true,
-				status: 200,
-				json: async () => ({ data: 'paseto-token' })
-			})
-			.mockResolvedValueOnce({ ok: true, status: 200, json: async () => [] });
-		await mod.internalApi('/devices/1/communications/latest', { service: 'public' });
-		expect(fetch.mock.calls[1][0]).toBe('/api/public/devices/1/communications/latest');
+
+		await expect(
+			dataPlaneApi('/devices/ref-1/communications', 'v4.public.tok')
+		).rejects.toMatchObject({
+			status: 403
+		});
 	});
 
 	it('internalApi throws when internal auth fails', async () => {
