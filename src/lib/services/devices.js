@@ -1,6 +1,28 @@
 import { PUBLIC_SISCOM_API_URL } from '$env/static/public';
 import { dev } from '$app/environment';
-import { internalApi } from '$lib/services/api';
+import { internalApi, dataPlaneApi } from '$lib/services/api';
+import { withDeviceDataToken, getDeviceDataToken } from '$lib/services/dataToken';
+
+/** Marcador de subprotocolo con el que siscom-api recibe el data token en el WebSocket. */
+export const WS_TOKEN_PROTOCOL = 'siscom.data-token.v1';
+
+/**
+ * siscom-api contesta en el espacio en el que se le preguntó: con `device_ref`.
+ * La consola trabaja con IMEI, así que se devuelve a IMEI.
+ * @template T
+ * @param {T} datos
+ * @param {string} ref
+ * @param {string} imei
+ * @returns {T}
+ */
+function aImei(datos, ref, imei) {
+	/** @param {any} fila */
+	const traducir = (fila) =>
+		fila && typeof fila === 'object' && fila.device_id === ref
+			? { ...fila, device_id: imei }
+			: fila;
+	return /** @type {T} */ (Array.isArray(datos) ? datos.map(traducir) : traducir(datos));
+}
 
 /**
  * @typedef {Object} SimProfile
@@ -150,13 +172,20 @@ export const DevicesService = {
 	 * @returns {Promise<DeviceCommunication | null>}
 	 */
 	async getLatestCommunication(id) {
-		return /** @type {Promise<DeviceCommunication | null>} */ (
-			internalApi(`/devices/${id}/communications/latest`, { service: 'public' })
+		return withDeviceDataToken(id, async ({ token, ref }) =>
+			aImei(
+				/** @type {DeviceCommunication | null} */ (
+					await dataPlaneApi(`/devices/${ref}/communications/latest`, token)
+				),
+				ref,
+				id
+			)
 		);
 	},
 
 	/**
-	 * URL de WebSocket para streaming de un dispositivo.
+	 * URL de WebSocket para streaming. Recibe `device_ref`, no IMEI: es lo que
+	 * acepta siscom-api con el data token.
 	 * @param {string|string[]} deviceIds
 	 * @returns {string}
 	 */
@@ -188,10 +217,27 @@ export const DevicesService = {
 		if (tz) params.append('tz', tz);
 		const queryString = params.toString() ? `?${params.toString()}` : '';
 
-		return /** @type {Promise<DeviceCommunication[]>} */ (
-			internalApi(`/devices/${deviceId}/communications${queryString}`, {
-				service: 'public'
-			})
+		return withDeviceDataToken(deviceId, async ({ token, ref }) =>
+			aImei(
+				/** @type {DeviceCommunication[]} */ (
+					await dataPlaneApi(`/devices/${ref}/communications${queryString}`, token)
+				),
+				ref,
+				deviceId
+			)
 		);
+	},
+
+	/**
+	 * Abre el WebSocket en vivo de un dispositivo, con el data token en el
+	 * subprotocolo (`Sec-WebSocket-Protocol: siscom.data-token.v1, <token>`).
+	 * siscom-api sólo lo valida al conectar, así que no hace falta renovarlo
+	 * mientras siga abierto.
+	 * @param {string} imei
+	 * @returns {Promise<WebSocket>}
+	 */
+	async openStream(imei) {
+		const { token, ref } = await getDeviceDataToken(imei);
+		return new WebSocket(this.getStreamUrl(ref), [WS_TOKEN_PROTOCOL, token]);
 	}
 };

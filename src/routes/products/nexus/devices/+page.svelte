@@ -312,8 +312,7 @@
 				map.setZoom(15);
 
 				// Connect WebSocket for live updates
-				const streamUrl = DevicesService.getStreamUrl(deviceId);
-				socket = new WebSocket(streamUrl);
+				socket = await DevicesService.openStream(deviceId);
 
 				socket.onopen = () => console.log('[nexus] WebSocket connected');
 
@@ -327,7 +326,9 @@
 
 							if (!isNaN(lat) && !isNaN(lng)) {
 								upsertVehicleMarker({
-									device_id: raw.DEVICE_ID || deviceId,
+									// El stream es de un solo dispositivo y siscom-api lo
+									// nombra por `device_ref`: el marcador sigue con el IMEI.
+									device_id: deviceId,
 									latitude: lat,
 									longitude: lng,
 									bearing: Number(raw.COURSE || raw.HEADING || 0),

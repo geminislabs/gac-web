@@ -23,18 +23,15 @@
  *   - **Rutas**: solo las dos de comunicaciones. Nada más entra.
  *   - **Métodos**: solo lectura. Un POST no cruza aunque alguien exporte el
  *     handler en la ruta.
- *   - **Cabeceras hacia el backend**: lista blanca. En particular **no viaja
- *     `Authorization`**: `internalApi` adjunta el PASETO interno de GAC a
- *     todas sus llamadas, y ese token es del plano de control. Que llegue al
- *     plano de datos contradice la separación de claves de la Fase 1
- *     (ADR-004 y ADR-005 de siscom-admin-api). Antes lo frenaba CORS; ahora lo
- *     frena esto.
+ *   - **Cabeceras hacia el backend**: lista blanca. `Authorization` sólo
+ *     cruza si lleva un PASETO `v4.public`, que es el data token
+ *     (`$lib/services/dataToken`). **El PASETO interno de GAC no viaja**: es
+ *     `v4.local`, del plano de control, y que llegue al plano de datos
+ *     contradice la separación de claves de la Fase 1 (ADR-004 y ADR-005 de
+ *     siscom-admin-api). Antes lo frenaba CORS; ahora lo frena esto.
  *   - **Cabeceras hacia el navegador**: lista blanca, y `Set-Cookie` se cae.
  *     Al ser same-origin, una cookie del backend se instalaría **en el dominio
  *     de GAC**.
- *
- * Cuando siscom-api empiece a exigir el data token, la cabecera que lo lleve
- * se añade aquí explícitamente. Una a una, nunca reenviando todo.
  */
 
 /** Lo único que el panel pide por aquí (`src/lib/services/devices.js`). */
@@ -46,6 +43,9 @@ const RUTAS_PERMITIDAS = [
 const METODOS_PERMITIDOS = new Set(['GET', 'HEAD']);
 
 const CABECERAS_AL_BACKEND = new Set(['accept', 'accept-language', 'content-type']);
+
+/** El data token: PASETO v4.public. El interno de GAC es v4.local y no encaja. */
+const DATA_TOKEN = /^Bearer v4\.public\.[A-Za-z0-9_\-.]+$/;
 
 const CABECERAS_AL_NAVEGADOR = new Set([
 	'content-type',
@@ -124,9 +124,14 @@ export async function proxyPublicApi(request, restPath, search, backendOrigin, f
 	}
 
 	const target = publicBackendUrl(backendOrigin, restPath, search);
+	const headers = filtrarCabeceras(request.headers, CABECERAS_AL_BACKEND);
+	const autorizacion = request.headers.get('authorization');
+	if (autorizacion && DATA_TOKEN.test(autorizacion)) {
+		headers.set('authorization', autorizacion);
+	}
 	const upstream = await fetchFn(target, {
 		method: request.method,
-		headers: filtrarCabeceras(request.headers, CABECERAS_AL_BACKEND)
+		headers
 	});
 
 	return new Response(upstream.body, {

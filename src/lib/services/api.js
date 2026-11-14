@@ -106,12 +106,15 @@ export async function api(endpoint, options = {}) {
 
 /**
  * Enhanced fetch wrapper for internal APIs requiring PASETO tokens
+ *
+ * Sólo el plano de control (admin-api). El plano de datos va por
+ * `dataPlaneApi`, con un data token: el PASETO interno no tiene por qué
+ * llegar a siscom-api.
  * @param {string} endpoint
- * @param {RequestInit & { service?: 'admin' | 'public' }} [options]
+ * @param {RequestInit} [options]
  * @returns {Promise<any>}
  */
 export async function internalApi(endpoint, options = {}) {
-	const service = options.service || 'admin';
 	let token;
 	try {
 		token = await getInternalToken('nexus');
@@ -138,19 +141,7 @@ export async function internalApi(endpoint, options = {}) {
 	const safeEndpoint = endpoint.replace(/\/$/, '');
 	const path = safeEndpoint.startsWith('/') ? safeEndpoint : `/${safeEndpoint}`;
 
-	// El plano de datos (`public`) siempre va same-origin: en dev lo cubre el
-	// proxy de Vite; en producción, `src/routes/api/public`. Pegarle al
-	// PUBLIC_SISCOM_API_URL desde el navegador lo bloquea CORS — ese origen no
-	// está en ALLOWED_ORIGINS. Admin-api sí reconoce la consola; ahí el
-	// desvío directo en producción se queda.
-	let url;
-	if (service === 'public') {
-		url = `/api/public${path}`;
-	} else if (dev) {
-		url = `/api/admin${path}`;
-	} else {
-		url = `${PUBLIC_SISCOM_ADMIN_API_URL}/api/v1${path}`;
-	}
+	const url = dev ? `/api/admin${path}` : `${PUBLIC_SISCOM_ADMIN_API_URL}/api/v1${path}`;
 
 	try {
 		const response = await fetch(url, config);
@@ -160,7 +151,7 @@ export async function internalApi(endpoint, options = {}) {
 			const error = new Error(
 				formatApiErrorMessage(
 					errorData,
-					`Internal API Error [${service}]: ${response.status} ${response.statusText}`
+					`Internal API Error: ${response.status} ${response.statusText}`
 				)
 			);
 			error.status = response.status;
@@ -172,7 +163,7 @@ export async function internalApi(endpoint, options = {}) {
 		if (response.status === 204) return null;
 		return await response.json();
 	} catch (error) {
-		console.error(`Internal API Request Failed [${service}]: ${endpoint}`, error);
+		console.error(`Internal API Request Failed: ${endpoint}`, error);
 		throw error;
 	}
 }
@@ -211,6 +202,37 @@ async function performRefresh() {
 		refreshPromise = null;
 	}
 	return false;
+}
+
+/**
+ * El plano de datos (siscom-api) con un data token (`$lib/services/dataToken`).
+ *
+ * Siempre same-origin: en dev lo cubre el proxy de Vite; en producción,
+ * `src/routes/api/public`. Pegarle al PUBLIC_SISCOM_API_URL desde el navegador
+ * lo bloquea CORS — ese origen no está en ALLOWED_ORIGINS.
+ * @param {string} endpoint
+ * @param {string} dataToken
+ * @returns {Promise<any>}
+ */
+export async function dataPlaneApi(endpoint, dataToken) {
+	const safeEndpoint = endpoint.replace(/\/$/, '');
+	const path = safeEndpoint.startsWith('/') ? safeEndpoint : `/${safeEndpoint}`;
+
+	const response = await fetch(`/api/public${path}`, {
+		headers: { Accept: 'application/json', Authorization: `Bearer ${dataToken}` }
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json().catch(() => ({}));
+		const error = new Error(
+			formatApiErrorMessage(errorData, `Data API Error: ${response.status} ${response.statusText}`)
+		);
+		error.status = response.status;
+		throw error;
+	}
+
+	if (response.status === 204) return null;
+	return response.json();
 }
 
 // Cache for internal tokens: serviceKey -> { token, expiration }

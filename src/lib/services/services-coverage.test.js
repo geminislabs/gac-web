@@ -67,7 +67,6 @@ describe('service method coverage', () => {
 		await DevicesService.updateStatus('d1', { new_status: 'active' });
 		await DevicesService.getEvents('d1');
 		await DevicesService.assignOrganization('d1', 'org-1');
-		await DevicesService.getCommunications('d1', '2026-01-01', 'UTC');
 
 		internalApiMock.mockResolvedValueOnce({ sims: [{ sim_id: 's1' }] });
 		await SimsService.getUnassigned();

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DevicesService } from './devices.js';
+import { DevicesService, WS_TOKEN_PROTOCOL } from './devices.js';
 
 const env = vi.hoisted(() => ({ dev: true }));
 
@@ -10,14 +10,26 @@ vi.mock('$env/static/public', () => ({
 }));
 
 const internalApiMock = vi.hoisted(() => vi.fn());
+const dataPlaneApiMock = vi.hoisted(() => vi.fn());
 
 vi.mock('$lib/services/api', () => ({
-	internalApi: (...args) => internalApiMock(...args)
+	internalApi: (...args) => internalApiMock(...args),
+	dataPlaneApi: (...args) => dataPlaneApiMock(...args)
+}));
+
+const credencial = { token: 'v4.public.tok', ref: 'ref-1', expiresAt: Date.now() + 600_000 };
+const getDeviceDataTokenMock = vi.hoisted(() => vi.fn());
+
+vi.mock('$lib/services/dataToken', () => ({
+	getDeviceDataToken: (...args) => getDeviceDataTokenMock(...args),
+	withDeviceDataToken: async (imei, run) => run(await getDeviceDataTokenMock(imei))
 }));
 
 describe('DevicesService', () => {
 	beforeEach(() => {
 		internalApiMock.mockReset();
+		dataPlaneApiMock.mockReset();
+		getDeviceDataTokenMock.mockReset().mockResolvedValue(credencial);
 		env.dev = true;
 	});
 
@@ -48,11 +60,48 @@ describe('DevicesService', () => {
 		});
 	});
 
-	it('getLatestCommunication uses public service', async () => {
-		internalApiMock.mockResolvedValueOnce({ device_id: 'd1' });
-		await DevicesService.getLatestCommunication('d1');
-		expect(internalApiMock).toHaveBeenCalledWith('/devices/d1/communications/latest', {
-			service: 'public'
-		});
+	it('getLatestCommunication pide por device_ref con el data token y devuelve IMEI', async () => {
+		dataPlaneApiMock.mockResolvedValueOnce({ device_id: 'ref-1', latitude: 19.4 });
+		const result = await DevicesService.getLatestCommunication('d1');
+		expect(getDeviceDataTokenMock).toHaveBeenCalledWith('d1');
+		expect(dataPlaneApiMock).toHaveBeenCalledWith(
+			'/devices/ref-1/communications/latest',
+			'v4.public.tok'
+		);
+		expect(result).toEqual({ device_id: 'd1', latitude: 19.4 });
+		expect(internalApiMock).not.toHaveBeenCalled();
+	});
+
+	it('getLatestCommunication deja pasar null', async () => {
+		dataPlaneApiMock.mockResolvedValueOnce(null);
+		expect(await DevicesService.getLatestCommunication('d1')).toBeNull();
+	});
+
+	it('getCommunications traduce cada fila de device_ref a IMEI', async () => {
+		dataPlaneApiMock.mockResolvedValueOnce([
+			{ device_id: 'ref-1', speed: 10 },
+			{ device_id: 'ref-1', speed: 20 }
+		]);
+		const result = await DevicesService.getCommunications(
+			'd1',
+			'2026-11-13',
+			'America/Mexico_City'
+		);
+		expect(dataPlaneApiMock).toHaveBeenCalledWith(
+			'/devices/ref-1/communications?received_at=2026-11-13&tz=America%2FMexico_City',
+			'v4.public.tok'
+		);
+		expect(result.map((r) => r.device_id)).toEqual(['d1', 'd1']);
+	});
+
+	it('openStream abre el WebSocket por device_ref con el token en el subprotocolo', async () => {
+		const WebSocketMock = vi.fn();
+		vi.stubGlobal('WebSocket', WebSocketMock);
+		await DevicesService.openStream('d1');
+		expect(WebSocketMock).toHaveBeenCalledWith(expect.stringContaining('device_ids=ref-1'), [
+			WS_TOKEN_PROTOCOL,
+			'v4.public.tok'
+		]);
+		vi.unstubAllGlobals();
 	});
 });

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **El mapa de dispositivos lee de siscom-api con data token.** Hasta ahora pedía las comunicaciones por IMEI y sin credencial, y en cuanto siscom-api exija el token (`DATA_TOKEN_ENFORCED`) se quedaría vacío. Ahora pide a admin-api (`POST /internal/data-token`, siscom-admin-api#199) un token por dispositivo junto con su `device_ref` opaco, y con eso consulta la última comunicación, el histórico del día y el WebSocket en vivo, que lleva el token en el subprotocolo. Las respuestas vuelven a IMEI antes de llegar a la pantalla. El token se guarda en memoria hasta poco antes de caducar; si siscom-api responde 401 o 403, se pide otro y se reintenta una vez. **Requiere admin-api con #199 desplegado**
+- El proxy `/api/public` deja pasar `Authorization` solo si lleva un data token (PASETO `v4.public`). El PASETO interno de GAC (`v4.local`) sigue sin llegar al plano de datos, y `internalApi` ya no tiene modo `public`: el plano de datos va por `dataPlaneApi`
+
 ### Changed
 
 - Dependencias al día (reúne los PR #11, #13, #16, #17, #19, #20, #21, #22 y #39 de Dependabot):
